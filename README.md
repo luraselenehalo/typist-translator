@@ -12,7 +12,7 @@ Type in any app → press one hotkey → your text is replaced by its translatio
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 ![UI](https://img.shields.io/badge/UI-React%20%2B%20WebView2-61dafb)
-[![Download](https://img.shields.io/badge/Download-v4.0.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
+[![Download](https://img.shields.io/badge/Download-v3.0.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
 
 Made by **Mrgunshi** ([@luraselenehalo](https://github.com/luraselenehalo))
 
@@ -211,7 +211,7 @@ ships with Windows. Everything that talks to Windows stays in **Python**.
 widget onto a canvas from Python. One widget costs **4–12 ms** and the window
 has ~573 of them, so it was slow to open and laggy to navigate.
 
-| | CustomTkinter (V3) | WebView + React (V4) |
+| | Previous build (CustomTkinter) | This build (React + WebView2) |
 |---|---|---|
 | Startup to interactive | 3,209 ms | **~1,000 ms** |
 | First tab switch | 419–880 ms | **< 1 ms** |
