@@ -16,7 +16,7 @@ never looks broken while a project is still finding its home.
 """
 
 APP_NAME = "Typist Translator"
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 AUTHOR = "Mrgunshi"
 LICENSE = "MIT"
 COPYRIGHT_YEAR = "2026"

@@ -11,6 +11,13 @@ venv/
 # Root-anchored so PyInstaller's output is ignored without catching ui/dist.
 /build/
 /dist/
+/build_trial/
+/dist_trial/
+/release/
+
+# The Inno Setup compiler, fetched by tools/get_innosetup.py. Third-party
+# binaries that anyone can re-download with one command.
+/tools/
 
 # Node (the UI toolchain). ui/dist IS committed on purpose: it is one 200 KB
 # HTML file, and shipping it means users can run the app without Node.

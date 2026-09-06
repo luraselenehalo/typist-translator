@@ -7,6 +7,7 @@ import GuidePage from './components/GuidePage';
 import HomePage from './components/HomePage';
 import LanguagePicker from './components/LanguagePicker';
 import SettingsPage from './components/SettingsPage';
+import WhatsNew from './components/WhatsNew';
 import { Switch, useIndicator } from './components/primitives';
 
 const TABS = [
@@ -34,6 +35,7 @@ export default function App() {
   const [tab, setTab] = useState('home');
   const [serviceActive, setServiceActive] = useState(true);
   const [picker, setPicker] = useState(null);
+  const [whatsNew, setWhatsNew] = useState(null);
   const languageIndex = useRef(new Map());
 
   /* ------------------------------------------------------------ bootstrap */
@@ -46,6 +48,8 @@ export default function App() {
       setConfig(data.config);
       setHistory(data.history || []);
       setServiceActive(data.serviceActive);
+      // Only ever set on the first launch after the app updated itself.
+      if (data.whatsNew) setWhatsNew(data.whatsNew);
       data.popularLanguages?.forEach((lang) =>
         languageIndex.current.set(lang.code, lang),
       );
@@ -287,6 +291,17 @@ export default function App() {
             {tab === 'about' ? <AboutPage about={boot.about} /> : null}
           </div>
         </main>
+
+        {whatsNew ? (
+          <WhatsNew
+            info={{
+              ...whatsNew,
+              releasesUrl: `${boot.about.links.find((l) => l.id === 'releases')?.url
+                || 'https://github.com'}`,
+            }}
+            onClose={() => setWhatsNew(null)}
+          />
+        ) : null}
 
         {picker ? (
           <LanguagePicker

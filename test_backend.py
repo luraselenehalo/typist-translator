@@ -41,10 +41,10 @@ ALL_LANGS = ("th", "en", "ja", "zh-CN")
 # The complete set of methods the front end is allowed to call.
 EXPECTED_API = {
     "clear_history", "copy_to_clipboard", "delete_history_entry",
-    "get_bootstrap", "get_history", "get_language", "minimize_to_tray",
-    "minimize_window", "open_link", "quit_app", "search_languages",
-    "set_hotkey", "set_service_active", "test_engine", "translate",
-    "ui_ready", "update_config",
+    "check_for_updates", "dismiss_whats_new", "get_bootstrap", "get_history",
+    "get_language", "minimize_to_tray", "minimize_window", "open_link",
+    "quit_app", "search_languages", "set_hotkey", "set_service_active",
+    "test_engine", "translate", "ui_ready", "update_config",
 }
 
 
@@ -139,7 +139,8 @@ def test_bootstrap_payload():
 
     for key in ("config", "defaults", "catalogs", "uiLanguages", "engines",
                 "selectionModes", "hotkeyPresets", "themes",
-                "popularLanguages", "history", "serviceActive", "about"):
+                "popularLanguages", "history", "serviceActive", "about",
+                "whatsNew"):
         assert key in data, f"bootstrap missing {key}"
 
     assert set(data["catalogs"]) == set(ALL_LANGS), sorted(data["catalogs"])

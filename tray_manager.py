@@ -7,6 +7,7 @@ import threading
 from PIL import Image, ImageDraw, ImageFont
 import pystray
 
+import paths
 from i18n import t
 
 
@@ -48,7 +49,7 @@ class TrayManager:
         show a dark block on a light taskbar. icon.png is the original artwork
         and is only a fallback.
         """
-        base = os.path.dirname(os.path.abspath(__file__))
+        base = paths.resource_dir()
         for name in ("icon_alpha.png", "icon.png"):
             path = os.path.join(base, name)
             if not os.path.exists(path):

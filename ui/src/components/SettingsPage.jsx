@@ -4,6 +4,7 @@ import { languageLabel, useI18n } from '../i18n';
 import { Button, Section } from './primitives';
 
 const PREF_KEYS = [
+  ['check_for_updates', 'settings.prefs.autoupdate'],
   ['show_progress_overlay', 'settings.prefs.overlay'],
   ['show_toast_notification', 'settings.prefs.toast'],
   ['sound_effect', 'settings.prefs.sound'],
@@ -26,6 +27,8 @@ export default function SettingsPage({
   const [hotkeyDraft, setHotkeyDraft] = useState(config.hotkey || '');
   const [hotkeyError, setHotkeyError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [updateNote, setUpdateNote] = useState('');
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => setHotkeyDraft(config.hotkey || ''), [config.hotkey]);
 
@@ -48,6 +51,7 @@ export default function SettingsPage({
   const resetDefaults = async () => {
     const patch = {
       selection_mode: defaults.selection_mode,
+      check_for_updates: defaults.check_for_updates,
       show_progress_overlay: defaults.show_progress_overlay,
       show_toast_notification: defaults.show_toast_notification,
       sound_effect: defaults.sound_effect,
@@ -61,6 +65,25 @@ export default function SettingsPage({
   };
 
   const presetValue = hotkeyPresets.includes(hotkeyDraft) ? hotkeyDraft : '__custom__';
+
+  const checkForUpdates = async () => {
+    setChecking(true);
+    setUpdateNote(t('update.check.checking'));
+    try {
+      const result = await call('check_for_updates');
+      if (result?.status === 'available') {
+        setUpdateNote(t('update.check.found', { version: result.version }));
+      } else if (result?.status === 'current') {
+        setUpdateNote(t('update.check.current', { version: result.version }));
+      } else {
+        setUpdateNote(result?.message || '');
+      }
+    } catch (err) {
+      setUpdateNote(String(err?.message || err));
+    } finally {
+      setChecking(false);
+    }
+  };
 
   return (
     <>
@@ -158,6 +181,15 @@ export default function SettingsPage({
           </option>
         ))}
       </select>
+
+      <div className="row settings__actions">
+        <Button variant="soft" onClick={checkForUpdates} disabled={checking}>
+          {checking ? t('update.check.checking') : t('update.check.now')}
+        </Button>
+        {updateNote ? (
+          <span className="muted settings__update-note">{updateNote}</span>
+        ) : null}
+      </div>
 
       <div className="row settings__actions">
         <Button variant="quiet" onClick={resetDefaults}>

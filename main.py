@@ -23,7 +23,10 @@ keyboard hook, clipboard injection, the tray icon and the floating windows -
 runs in Python.
 """
 import os
+import subprocess
 import sys
+import threading
+import time
 
 # Ensure UTF-8 output
 if sys.platform == "win32":
@@ -35,7 +38,13 @@ if sys.platform == "win32":
 
 import webview
 
+import about
+import applog
 import i18n
+import paths
+import single_instance
+import update_state
+import updater
 from api_bridge import Api
 from config_manager import load_config
 from history_store import HistoryStore
@@ -43,10 +52,10 @@ from hotkey_manager import HotkeyManager
 from overlay_window import ProgressOverlay, clip
 from toast_window import ToastHUD
 from tray_manager import TrayManager
+from update_window import UpdatePanel
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-UI_ENTRY = os.path.join(BASE_DIR, "ui", "dist", "index.html")
-ICON_ICO = os.path.join(BASE_DIR, "icon.ico")
+UI_ENTRY = paths.resource("ui", "dist", "index.html")
+ICON_ICO = paths.resource("icon.ico")
 
 # Windows groups taskbar buttons by AppUserModelID. Without one, a script run
 # by python.exe inherits Python's identity - Python's icon, and Python's
@@ -61,6 +70,10 @@ MIN_HEIGHT = 560
 
 # How much of the text fits on the overlay chip's second line.
 PREVIEW_CHARS = 52
+
+# Long enough after start-up that the check never competes with the first paint
+# or the user's first hotkey press.
+UPDATE_CHECK_DELAY_SECONDS = 60
 
 # The chip's tag has room for one word. Full names are in TRANSLATION_ENGINES;
 # these are just short enough to fit, and unambiguous - "Google Translate" and
@@ -98,8 +111,159 @@ def _resolved_theme(config):
         return "light"
 
 
+class UpdateFlow:
+    """Check, offer, download, hand over.
+
+    Everything here runs on background threads so a slow or unreachable GitHub
+    can never stall the window, and every step is wrapped: a failed update has
+    to leave a working application behind.
+    """
+
+    def __init__(self, config, panel, theme_of, on_quit):
+        self._config = config
+        self._panel = panel
+        self._theme_of = theme_of
+        self._on_quit = on_quit
+        self._offer = None
+        self._busy = False
+
+    # -- checking -----------------------------------------------------
+    def start_background_check(self):
+        if not self._config.get("check_for_updates", True):
+            return
+        threading.Thread(target=self._delayed_check, daemon=True).start()
+
+    def _delayed_check(self):
+        time.sleep(UPDATE_CHECK_DELAY_SECONDS)
+        self.check(force=False, announce_when_current=False)
+
+    def check(self, force=False, announce_when_current=True):
+        """Returns a small dict the Settings tab can show. Never raises."""
+        try:
+            found = updater.check(force=force)
+        except updater.UpdateError as exc:
+            print(f"[Update] check failed: {exc}")
+            return {"status": "error", "message": str(exc)}
+        except Exception as exc:
+            print(f"[Update] check failed unexpectedly: {exc}")
+            return {"status": "error", "message": str(exc)}
+
+        if not found:
+            return {"status": "current", "version": about.VERSION}
+
+        self._offer = found
+        print(f"[Update] {found['version']} is available")
+        try:
+            self._panel.offer(found["version"], found.get("notes", ""),
+                              theme=self._theme_of())
+        except Exception as exc:
+            print(f"[Update] could not show the notification: {exc}")
+        return {"status": "available", "version": found["version"]}
+
+    # -- the buttons on the card --------------------------------------
+    def on_choice(self, action):
+        if action == "later":
+            self._panel.hide()
+        elif action == "skip":
+            if self._offer:
+                update_state.write(skipped_version=self._offer["version"])
+            self._panel.hide()
+        elif action == "page":
+            self._open_releases()
+            self._panel.hide()
+        elif action == "install":
+            if self._busy:
+                return
+            threading.Thread(target=self._install, daemon=True).start()
+
+    def _open_releases(self):
+        try:
+            import webbrowser
+            webbrowser.open(updater.RELEASES_PAGE)
+        except Exception:
+            pass
+
+    # -- downloading and handing over ---------------------------------
+    def _install(self):
+        self._busy = True
+        try:
+            offer = self._offer
+            if not offer:
+                return
+            if not updater.can_self_install():
+                # A copy run from source or unzipped by hand has nothing for
+                # the installer to upgrade. Say so instead of doing nothing.
+                self._panel.failed(i18n.t("update.portable_only"),
+                                   theme=self._theme_of())
+                return
+
+            installer = updater.download(offer["asset"], on_progress=self._progress)
+            update_state.write(pending_version=offer["version"],
+                               pending_installer=installer,
+                               pending_notes=offer.get("notes", "")[:8000],
+                               latest_seen=offer["version"])
+            self._panel.installing()
+            time.sleep(1.2)          # let the user read it before we vanish
+
+            command = updater.install_command(
+                installer, language=self._config.get("app_language", "en"))
+            print(f"[Update] handing over to {command[0]}")
+            # DETACHED so the installer outlives us: it has to wait for this
+            # process to exit before it can replace the files we are running.
+            subprocess.Popen(
+                command,
+                creationflags=getattr(subprocess, "DETACHED_PROCESS", 0)
+                | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
+                close_fds=True)
+            time.sleep(0.4)
+            self._on_quit()
+        except updater.UpdateError as exc:
+            print(f"[Update] {exc}")
+            self._panel.failed(str(exc), theme=self._theme_of())
+        except Exception as exc:
+            print(f"[Update] unexpected failure: {exc}")
+            self._panel.failed(str(exc), theme=self._theme_of())
+        finally:
+            self._busy = False
+
+    def _progress(self, received, total):
+        try:
+            self._panel.progress(received, total)
+        except Exception:
+            pass
+
+
+def _consume_whats_new():
+    """If this launch followed an update, hand the notes to the UI once.
+
+    The relaunch comes from the installer with --updated, but the flag alone is
+    not trusted: the recorded pending version has to actually match what is
+    running now, so a stale marker cannot pop the panel open forever.
+    """
+    state = update_state.read()
+    pending = state.get("pending_version") or ""
+    just_updated = "--updated" in sys.argv or (
+        pending and pending == about.VERSION)
+    if not just_updated:
+        return None
+    notes = state.get("pending_notes") if "pending_notes" in state else ""
+    update_state.clear_pending()
+    update_state.write(launched_version=about.VERSION)
+    return {"version": about.VERSION, "notes": notes or ""}
+
+
 def main():
     print("[Main] Starting Typist Translator (WebView UI)...")
+
+    # One copy only. Two would put two hooks on the same global hotkey, so a
+    # single keypress would run the whole workflow twice and the two copies
+    # would race over the clipboard.
+    guard = single_instance.SingleInstance()
+    if not guard.acquire():
+        print("[Main] Already running - bringing the existing window forward.")
+        single_instance.activate_existing()
+        return 0
+
     _set_app_identity()
 
     if not os.path.exists(UI_ENTRY):
@@ -109,6 +273,9 @@ def main():
 
     config = load_config()
     i18n.set_language(config.get("app_language", i18n.DEFAULT_LANGUAGE))
+    whats_new = _consume_whats_new()
+    if whats_new:
+        print(f"[Main] Updated to {whats_new['version']}")
 
     history = HistoryStore()
     hotkey_mgr = HotkeyManager(config=config)
@@ -138,10 +305,16 @@ def main():
                            on_quit=on_quit)
 
     api = Api(config=config, hotkey_manager=hotkey_mgr,
-              tray_manager=tray_mgr, history=history)
+              tray_manager=tray_mgr, history=history, whats_new=whats_new)
 
     toast = ToastHUD()
     overlay = ProgressOverlay()
+    update_panel = UpdatePanel()
+    updates = UpdateFlow(config=config, panel=update_panel,
+                         theme_of=lambda: _resolved_theme(config),
+                         on_quit=lambda: shutdown())
+    update_panel.on_choice = updates.on_choice
+    api.attach_updates(updates)
 
     def engine_name():
         engine_id = config.get("translation_engine", "")
@@ -210,6 +383,7 @@ def main():
     state["window"] = window
     toast.create()
     overlay.create()
+    update_panel.create()
 
     def shutdown():
         if state["quitting"]:
@@ -229,6 +403,7 @@ def main():
             http_pool.close_all()
         except Exception:
             pass
+        update_panel.destroy()
         overlay.destroy()
         toast.destroy()
         try:
@@ -253,6 +428,8 @@ def main():
         tray_mgr.start()
         toast.mark_ready()
         overlay.mark_ready()
+        update_panel.mark_ready()
+        updates.start_background_check()
         print("[Main] Typist Translator running successfully.")
 
     webview.start(on_started, private_mode=False, debug=_debug_enabled(),

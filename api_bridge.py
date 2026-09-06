@@ -48,7 +48,8 @@ def _safe(fn):
 
 
 class Api:
-    def __init__(self, config, hotkey_manager, tray_manager, history=None):
+    def __init__(self, config, hotkey_manager, tray_manager, history=None,
+                 whats_new=None):
         # Everything here is underscore-prefixed on purpose: pywebview walks
         # dir(js_api) to build the JS bridge and recurses into public
         # non-callable attributes, which would both expose these internals to
@@ -60,6 +61,9 @@ class Api:
 
         self._window = None
         self._on_quit = None
+        self._updates = None
+        # Set when this launch followed a self-update; the UI shows it once.
+        self._whats_new = whats_new
         self._lock = threading.Lock()
 
         # Set once the front end has rendered its first interactive frame.
@@ -91,6 +95,9 @@ class Api:
         self._window = window
         self._on_quit = on_quit
 
+    def attach_updates(self, updates):
+        self._updates = updates
+
     def push_event(self, name, payload=None):
         """Deliver an event to the front end. Safe to call from any thread."""
         window = self._window
@@ -107,6 +114,7 @@ class Api:
     # These three are for Python callers only; pywebview skips any attribute
     # marked non-serializable when it builds the JS bridge.
     attach_window._serializable = False
+    attach_updates._serializable = False
     push_event._serializable = False
     wait_until_ready._serializable = False
 
@@ -155,6 +163,8 @@ class Api:
             "history": self._history.list(),
             "serviceActive": bool(self._hotkey_mgr.is_active),
             "about": about.payload(),
+            # Present only on the first launch after an update.
+            "whatsNew": self._whats_new,
         }
 
     @staticmethod
@@ -290,6 +300,19 @@ class Api:
         import pyperclip
         pyperclip.copy(text or "")
         return {"copied": True}
+
+    @_safe
+    def check_for_updates(self):
+        """The Settings button. Asks GitHub now, ignoring the once-a-day rule."""
+        if self._updates is None:
+            return {"status": "unavailable"}
+        return self._updates.check(force=True)
+
+    @_safe
+    def dismiss_whats_new(self):
+        """The panel is shown once; forget it so a reload does not repeat it."""
+        self._whats_new = None
+        return {"dismissed": True}
 
     @_safe
     def open_link(self, url):

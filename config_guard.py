@@ -14,8 +14,7 @@ in memory, not in a temporary file.
 """
 import os
 
-CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                           "config.json")
+from config_manager import CONFIG_FILE as CONFIG_PATH
 
 
 class ConfigGuard:
