@@ -15,9 +15,10 @@ venv/
 /dist_trial/
 /release/
 
-# The Inno Setup compiler, fetched by tools/get_innosetup.py. Third-party
-# binaries that anyone can re-download with one command.
-/tools/
+# The Inno Setup compiler that tools/get_innosetup.py downloads. The script
+# itself is committed - it is how anyone reproduces the build.
+/tools/innosetup/
+/tools/*.exe
 
 # Node (the UI toolchain). ui/dist IS committed on purpose: it is one 200 KB
 # HTML file, and shipping it means users can run the app without Node.

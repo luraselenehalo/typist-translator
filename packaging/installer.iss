@@ -1,4 +1,4 @@
-; Typist Translator - Windows installer
+﻿; Typist Translator - Windows installer
 ;
 ; Compiled by build.py, which substitutes the /D values below from about.py so
 ; the version never has to be typed in two places.

@@ -9,6 +9,11 @@
 *.png binary
 *.ico binary
 
+# Inno Setup reads a script without a BOM as ANSI, which would mangle the
+# Thai, Japanese and Chinese wizard strings. Keep it byte-for-byte.
+*.isl -text
+packaging/installer.iss -text
+
 # The built UI is one generated file; keep it out of diffs and language stats.
 ui/dist/index.html linguist-generated=true -diff
 ui/package-lock.json linguist-generated=true -diff
