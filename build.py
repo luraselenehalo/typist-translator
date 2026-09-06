@@ -1,9 +1,10 @@
 """
 Build the Windows release: a frozen application, then an installer around it.
 
-    python build.py            # app + installer
+    python build.py            # app + installer + portable zip
     python build.py --app      # just the frozen app, for testing
     python build.py --ui       # rebuild the React bundle first
+    python build.py --no-zip   # skip the portable archive
 
 Everything version-shaped is read from about.py, so the number is typed once and
 flows into the executable's file properties, the installer's AppVersion, the
@@ -22,6 +23,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import zipfile
 
 sys.dont_write_bytecode = True
 
@@ -144,6 +146,54 @@ def freeze(stage):
     return os.path.join(dist, APP_EXE_NAME)
 
 
+PORTABLE_README = r"""Typist Translator {version} - portable
+=========================================
+
+Unpack this anywhere and run TypistTranslator.exe. Nothing is installed and
+nothing is written outside this folder except your settings, which live in
+%APPDATA%\TypistTranslator.
+
+This copy CANNOT update itself. It has no installer to hand over to, so when a
+new version appears it will point you at the download page instead of trying to
+replace itself in place. If you would rather it updated on its own, use
+TypistTranslator-Setup-{version}.exe.
+
+Requires Windows 10 or 11. The WebView2 runtime ships with Windows 11; on
+Windows 10 you may need it from
+https://developer.microsoft.com/microsoft-edge/webview2/
+
+{repo}
+"""
+
+
+def make_portable(payload):
+    """A no-install archive of the same frozen build.
+
+    Some people cannot run an installer at all - a locked-down machine, a USB
+    stick, a policy against per-user installs. The zip is the same bytes as the
+    installer carries, minus the ability to update itself, and it says so.
+    """
+    say("packaging the portable archive")
+    os.makedirs(RELEASE_DIR, exist_ok=True)
+    archive = os.path.join(
+        RELEASE_DIR, f"TypistTranslator-{about.VERSION}-portable.zip")
+    if os.path.exists(archive):
+        os.remove(archive)
+    root = f"TypistTranslator-{about.VERSION}"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        for directory, _dirs, files in os.walk(payload):
+            for name in sorted(files):
+                full = os.path.join(directory, name)
+                zf.write(full, os.path.join(
+                    root, os.path.relpath(full, payload)))
+        notes = PORTABLE_README.format(version=about.VERSION,
+                                       repo=about.github_url())
+        # CRLF, so Notepad shows it as paragraphs rather than one long line.
+        zf.writestr(os.path.join(root, "README-portable.txt"),
+                    notes.replace("\n", "\r\n"))
+    return archive
+
+
 def compile_installer(payload, stage):
     if not os.path.exists(ISCC):
         raise SystemExit(
@@ -169,6 +219,8 @@ def main():
                         help="stop after the frozen app; skip the installer")
     parser.add_argument("--ui", action="store_true",
                         help="rebuild the React bundle first")
+    parser.add_argument("--no-zip", action="store_true",
+                        help="skip the portable archive")
     parser.add_argument("--keep", action="store_true",
                         help="leave the staging directory for inspection")
     args = parser.parse_args()
@@ -198,6 +250,11 @@ def main():
         setup = compile_installer(payload, stage)
         say(f"installer: {setup}  "
             f"({os.path.getsize(setup) / 1048576:.1f} MB)")
+
+        if not args.no_zip:
+            archive = make_portable(payload)
+            say(f"portable:  {archive}  "
+                f"({os.path.getsize(archive) / 1048576:.1f} MB)")
     finally:
         if args.keep:
             say(f"staging kept at {stage}")

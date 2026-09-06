@@ -288,10 +288,23 @@ def _installer_language(app_language):
 
 
 def can_self_install() -> bool:
-    """Only an installed build can replace itself.
+    """Only the copy the installer put there can replace itself.
 
-    Run from source, or from a copy someone unzipped by hand, there is nothing
-    for the installer to upgrade - the honest move is to send them to the
-    release page instead of silently doing nothing.
+    Being frozen is not enough. A portable copy - the zip, or an install folder
+    someone moved - is also frozen, but running the installer against it would
+    silently install a *second* copy into %LOCALAPPDATA% and leave the one the
+    user is actually running untouched and out of date. So this asks the
+    installer's own registry entry where it put the app, and only agrees when
+    that is where we are running from.
     """
-    return paths.FROZEN
+    if not paths.FROZEN:
+        return False
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                            r"Software\TypistTranslator") as key:
+            recorded = winreg.QueryValueEx(key, "InstallPath")[0]
+    except (OSError, ImportError):
+        return False
+    return os.path.normcase(os.path.abspath(recorded)) == os.path.normcase(
+        os.path.abspath(paths.INSTALL_DIR))
