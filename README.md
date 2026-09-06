@@ -12,7 +12,7 @@ Type in any app → press one hotkey → your text is replaced by its translatio
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 ![UI](https://img.shields.io/badge/UI-React%20%2B%20WebView2-61dafb)
-[![Download](https://img.shields.io/badge/Download-v3.0.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
+[![Download](https://img.shields.io/badge/Download-v3.1.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
 
 Made by **Mrgunshi** ([@luraselenehalo](https://github.com/luraselenehalo))
 
@@ -128,13 +128,26 @@ Light theme is a click away:
   [from Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/)
 - **[Node.js](https://nodejs.org/)** — only if you build the interface yourself
 
-### Option 1 — download the release *(no Node.js needed)*
+### Option 1 — the installer *(nothing else needed)*
 
-1. Grab the zip from **[Releases](https://github.com/luraselenehalo/typist-translator/releases/latest)** and unpack it
-2. In that folder: `pip install -r requirements.txt`
-3. Double-click **`run.bat`**
+Download **`TypistTranslator-Setup-3.1.0.exe`** from
+**[Releases](https://github.com/luraselenehalo/typist-translator/releases/latest)**
+and run it. No Python, no Node.js, no command line.
 
-The interface comes prebuilt in the archive.
+It installs for your user only, so Windows never asks for administrator rights.
+The wizard opens by asking which of the four interface languages you want, and
+its last page offers a Desktop shortcut and start-with-Windows.
+
+Once installed the app keeps itself up to date — see below.
+
+> **The SmartScreen warning.** This build is not code-signed, so Windows shows
+> *"Windows protected your PC"* the first time. Click **More info → Run
+> anyway**. A certificate costs a few hundred dollars a year and this is a free
+> project; if that bothers you, build it yourself — `python build.py` produces
+> exactly the published files.
+
+`TypistTranslator-3.1.0-portable.zip` is the same build in a folder you can
+unpack anywhere. It cannot update itself, and its README says so.
 
 ### Option 2 — from source
 
@@ -149,6 +162,18 @@ python main.py
 `run.bat` builds the UI on first run if it is missing.
 `run_silent.vbs` starts without a console window.
 `build_ui.bat` rebuilds the interface after you change anything under `ui/src`.
+
+### Building the installer yourself
+
+```bash
+pip install pyinstaller
+python tools/get_innosetup.py    # fetches the compiler into tools/, portably
+python build.py                  # -> release/TypistTranslator-Setup-<version>.exe
+```
+
+`build.py` reads the version from [`about.py`](about.py) and feeds it to the
+executable's version resource, the installer and the filenames, so the number
+lives in exactly one place.
 
 ---
 
@@ -165,10 +190,38 @@ python main.py
 
 ---
 
+## Updating itself
+
+A card slides into the bottom-right corner when a new version exists. Accept it
+and the app downloads the update, installs it, closes and reopens itself, then
+shows what changed. Decline it, or skip that version, and it leaves you alone.
+Turn it off in **Settings → section 4**, or press **Check for updates** there.
+
+It only ever contacts this repository, and that address is compiled in rather
+than read from your settings — a file anyone who could already write to your
+profile could edit. Redirects are followed only to github.com and
+githubusercontent.com over https, because GitHub serves downloads from one and
+they cannot simply be refused. Every downloaded byte is hashed while streaming
+and the file is only kept if it matches the SHA-256 GitHub publishes for it.
+
+**The limit, stated plainly:** that checksum arrives in the same response as the
+download link, so it proves the file was not altered in transit — not that it
+was published by the author. Anyone who could push a release could publish a
+payload and a matching hash. Closing that needs a code-signing certificate and a
+signature check against a pinned publisher; until one exists this is the ceiling,
+and [`updater.py`](updater.py) says so in its own docstring.
+
+---
+
 ## Configuration
 
 Everything is editable in the app; `config.json` is written for you on first
 run.
+
+Installed, it lives in `%APPDATA%\TypistTranslator\config.json` — deliberately
+not beside the program, because an update replaces that whole folder. Run from
+source, it stays in the project directory. Upgrading from a pre-3.1.0 copy, the
+app finds the old file and brings it across.
 
 > ⚠️ `config.json` holds your **API keys**. It is in `.gitignore` — never
 > commit it.
@@ -181,6 +234,7 @@ run.
 | `translation_engine` | Which engine to use | `google_gtx` |
 | `show_progress_overlay` | The floating "translating…" chip | `true` |
 | `show_toast_notification` | The result toast in the corner | `true` |
+| `check_for_updates` | Look for new releases and say so | `true` |
 | `app_language` | Interface language | `th` |
 
 ---
@@ -230,6 +284,14 @@ bundled Chromium.
 |---|---|
 | `main.py` | Entry point — wires the WebView, hotkey and tray together |
 | `about.py` | **Author, links and version — the one file to edit** |
+| `build.py` | Builds the frozen app, the installer and the portable archive |
+| `packaging/installer.iss` | The Inno Setup script behind the installer |
+| `paths.py` | Bundled resources vs. user data, frozen or from source |
+| `updater.py` | Finds, verifies and hands over a new release |
+| `update_window.py` | The update card in the corner |
+| `update_state.py` | What the updater remembers between runs |
+| `single_instance.py` | One copy at a time, and the installer waits on it |
+| `applog.py` | A log file, because a windowed build has no console |
 | `api_bridge.py` | The Python ↔ React contract (17 methods JavaScript may call) |
 | `hotkey_manager.py` | Global hotkey and the select / copy / translate / paste workflow |
 | `translator_core.py` | Every engine, the 100+ language database, and the cache |
