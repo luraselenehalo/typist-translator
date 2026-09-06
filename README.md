@@ -4,263 +4,317 @@
 
 # Typist Translator
 
-**แปลภาษาขณะพิมพ์ ในทุกโปรแกรมบน Windows โดยไม่ต้องสลับหน้าต่าง**
+**Translate as you type, in any Windows application, without leaving it.**
 
-พิมพ์ข้อความในโปรแกรมไหนก็ได้ → กดคีย์ลัดหนึ่งครั้ง → คำแปลถูกวางทับลงไปในที่เดิม
+Type in any app → press one hotkey → your text is replaced by its translation.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-4f46e5.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 ![UI](https://img.shields.io/badge/UI-React%20%2B%20WebView2-61dafb)
+[![Download](https://img.shields.io/badge/Download-v4.0.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
 
-สร้างโดย **Mrgunshi** ([@luraselenehalo](https://github.com/luraselenehalo))
+Made by **Mrgunshi** ([@luraselenehalo](https://github.com/luraselenehalo))
+
+<img src="docs/home-dark.png" width="880" alt="Typist Translator main window">
 
 </div>
 
 ---
 
-## 📌 โปรแกรมนี้คืออะไร
+## What it does
 
-เวลาคุยกับคนต่างชาติใน Discord, LINE, Messenger, Slack หรือเขียนอีเมลในเบราว์เซอร์
-ปกติต้องเปิดแท็บ Google Translate → คัดลอกไป → คัดลอกกลับ → วาง ทุกครั้งที่จะส่งข้อความ
+Talking to someone in another language in Discord, LINE, Messenger or Slack
+normally means a second browser tab: copy out, paste in, copy back, paste
+again — every single message.
 
-โปรแกรมนี้ตัดขั้นตอนนั้นออกทั้งหมด **พิมพ์ในช่องเดิม กดคีย์ลัด แล้วข้อความก็เปลี่ยนเป็นคำแปล**
-ไม่ต้องละมือจากคีย์บอร์ด ไม่ต้องสลับหน้าต่าง ทำงานได้กับทุกโปรแกรมที่มีช่องพิมพ์ข้อความ
+This removes all of that. **Type in the box you are already in, press the
+hotkey, and the text becomes the translation.** Your hands never leave the
+keyboard and no window ever changes.
 
 ```
-พิมพ์:  สวัสดีครับ ยินดีที่ได้ร่วมงานกันครับ
-กด:     Ctrl + Alt + T
-ได้:    Hello, nice to work with you.
+you type:   สวัสดีครับ ยินดีที่ได้ร่วมงานกันครับ
+you press:  Ctrl + Alt + T
+you get:    Hello, nice to work with you.
 ```
+
+It works anywhere there is a text field — chat apps, documents, browsers,
+terminals, game launchers.
 
 ---
 
-## ✨ คุณสมบัติ
+## You can see it working
+
+Some engines take a second or three. A hotkey that does nothing visible for
+that long feels broken, so a small chip appears **right next to the text being
+translated, floating above every window**, for exactly as long as the work
+takes.
 
 | | |
 |---|---|
-| ⌨️ **แปลและแทนที่ในที่เดิม** | ไม่ต้องคัดลอก ไม่ต้องเปิดแท็บใหม่ ข้อความในช่องเดิมเปลี่ยนเป็นคำแปลทันที |
-| 🔄 **สลับภาษาอัตโนมัติ** | พิมพ์ไทยได้อังกฤษ พิมพ์อังกฤษได้ไทย หรือเลือกคู่ภาษาเองจาก 100+ ภาษา |
-| ⏳ **เห็นตลอดว่ากำลังแปลอยู่** | ป้ายลอยเหนือทุกหน้าต่าง ขึ้นตรงข้อความที่กำลังแปล พร้อมตัวนับวินาทีเมื่อเอนจินช้า |
-| 🎯 **โหมดเลือกข้อความ 4 แบบ** | ทั้งหมด (Ctrl+A), อัจฉริยะ, จากต้นบรรทัด (Shift+Home), เฉพาะที่คลุมดำ |
-| 🤖 **5 เอนจินแปลภาษา** | Google Translate, MyMemory (ฟรี) และ DeepL, Gemini, OpenAI/Groq/Local LLM |
-| 🌍 **หน้าตาโปรแกรม 4 ภาษา** | ไทย / English / 日本語 / 简体中文 สลับได้ทันทีไม่ต้องเปิดใหม่ |
-| ⚡ **จำคำแปลเดิมไว้** | แปลซ้ำคำเดิมได้คำตอบทันที (0.02 ms) ไม่ต้องยิงเน็ตซ้ำ |
-| 🔒 **ข้อมูลอยู่ในเครื่อง** | ประวัติและ API Key อยู่ใน `config.json` ของคุณเท่านั้น ไม่มีการเก็บสถิติการใช้งาน |
-| 🖥️ **ทำงานเบื้องหลัง** | ปิดหน้าต่างแล้วย่อลง System Tray คีย์ลัดยังทำงานต่อ |
+| <img src="docs/chip-working.png" width="320"> | Spinner, the source text shimmering as it is processed, an indeterminate progress bar, and an elapsed counter once the wait passes 1.4 s |
+| <img src="docs/chip-done.png" width="320"> | Green tick, the finished translation, and how long it took — then it fades out |
+| <img src="docs/chip-error.png" width="320"> | What actually went wrong. Failures used to happen in complete silence |
+
+If an engine takes longer than six seconds the label changes to *"Still
+translating, hang on…"* so you know it is alive rather than stuck.
+
+**How it finds the text**, in order of how much it actually knows:
+
+1. The real caret position (`GetGUIThreadInfo`) — exact, and works in Notepad,
+   Word and any native Win32 field.
+2. The focused child control, when it is a real sub-window.
+3. Otherwise the window is one big Chromium/Electron surface (Discord, LINE,
+   Slack, a browser) and Windows will not report a caret — so the chip is
+   centred above the bottom edge, where chat apps put the box you type in.
+
+The chip is **click-through** and **never takes focus**. That is not cosmetic:
+the very next thing the workflow does is send `Ctrl+A` / `Ctrl+C` / `Ctrl+V` to
+whatever is focused, so a chip that stole focus would break the whole feature.
+The Windows details are documented in [`win_overlay.py`](win_overlay.py).
+
+Turn it off in **Settings → section 4** if you prefer.
 
 ---
 
-## 🚀 เริ่มใช้งาน
+## Features
 
-### สิ่งที่ต้องมี
+| | |
+|---|---|
+| ⌨️ **In-place translation** | One hotkey selects, translates and pastes back over your text |
+| 🔄 **Automatic language swap** | Thai in → English out, English in → Thai out, or any pair from 100+ languages |
+| ⏳ **Live progress overlay** | Pinned above every window, anchored at the caret, with an elapsed counter |
+| 🎯 **Four selection modes** | Whole box (Ctrl+A), Smart, From line start (Shift+Home), Selection only |
+| 🤖 **Five engines** | Google Translate, MyMemory (free, no setup), DeepL, Gemini, OpenAI/Groq/Local LLM |
+| 🌍 **Interface in four languages** | English, ไทย, 日本語, 简体中文 — switches instantly, no restart |
+| ⚡ **Translation memory** | Repeating a phrase answers in 0.02 ms instead of hitting the network |
+| 🔒 **Everything stays local** | History and API keys live in your own `config.json`. No telemetry |
+| 🖥️ **Runs from the tray** | Close the window and the hotkey keeps working |
 
-- **Windows 10 / 11**
-- **Python 3.10 ขึ้นไป** — [ดาวน์โหลด](https://www.python.org/downloads/) (ตอนติดตั้งอย่าลืมติ๊ก *Add Python to PATH*)
-- **Node.js** — [ดาวน์โหลด](https://nodejs.org/) *(ใช้ครั้งแรกครั้งเดียวเพื่อสร้างหน้าตาโปรแกรม)*
-- **WebView2 Runtime** — Windows 11 มีมาให้อยู่แล้ว, Windows 10 บางเครื่องอาจต้อง [ติดตั้งเพิ่ม](https://developer.microsoft.com/microsoft-edge/webview2/)
+---
 
-### ติดตั้ง
+## Screenshots
+
+<table>
+<tr>
+<td width="50%"><img src="docs/home-dark.png" alt="Home, dark"><br><sub><b>Home</b> — hotkey, language pair, engine, a sandbox to try phrases, and history</sub></td>
+<td width="50%"><img src="docs/sandbox-busy.png" alt="Sandbox translating"><br><sub><b>While translating</b> — the source sweeps and the result pane shimmers, so a stale translation is never mistaken for a fresh one</sub></td>
+</tr>
+<tr>
+<td><img src="docs/engines.png" alt="Engines"><br><sub><b>Engines</b> — pick one, paste an API key, test the connection</sub></td>
+<td><img src="docs/settings.png" alt="Settings"><br><sub><b>Settings</b> — interface language, hotkey, selection mode, notifications, theme</sub></td>
+</tr>
+<tr>
+<td><img src="docs/guide.png" alt="Guide"><br><sub><b>Guide</b> — how it works and what each engine is good for</sub></td>
+<td><img src="docs/about.png" alt="About"><br><sub><b>About</b> — what it does, the stack, links and licence</sub></td>
+</tr>
+</table>
+
+Light theme is a click away:
+
+<div align="center">
+<img src="docs/home-light.png" width="720" alt="Home, light theme">
+</div>
+
+---
+
+## Getting started
+
+### Requirements
+
+- **Windows 10 or 11**
+- **[Python 3.10+](https://www.python.org/downloads/)** — tick *Add Python to PATH* during setup
+- **WebView2 runtime** — ships with Windows 11; Windows 10 may need it
+  [from Microsoft](https://developer.microsoft.com/microsoft-edge/webview2/)
+- **[Node.js](https://nodejs.org/)** — only if you build the interface yourself
+
+### Option 1 — download the release *(no Node.js needed)*
+
+1. Grab the zip from **[Releases](https://github.com/luraselenehalo/typist-translator/releases/latest)** and unpack it
+2. In that folder: `pip install -r requirements.txt`
+3. Double-click **`run.bat`**
+
+The interface comes prebuilt in the archive.
+
+### Option 2 — from source
 
 ```bash
 git clone https://github.com/luraselenehalo/typist-translator.git
 cd typist-translator
 pip install -r requirements.txt
 cd ui && npm install && npm run build && cd ..
-```
-
-### เปิดใช้งาน
-
-ดับเบิลคลิก **`run.bat`** (สร้าง UI ให้อัตโนมัติถ้ายังไม่เคยสร้าง) หรือ
-
-```bash
 python main.py
 ```
 
-เปิดแบบไม่มีหน้าต่างคอนโซล: ดับเบิลคลิก **`run_silent.vbs`**
-แก้หน้าตาแล้วสร้างใหม่: ดับเบิลคลิก **`build_ui.bat`**
+`run.bat` builds the UI on first run if it is missing.
+`run_silent.vbs` starts without a console window.
+`build_ui.bat` rebuilds the interface after you change anything under `ui/src`.
 
 ---
 
-## 🎯 วิธีใช้
+## Using it
 
-1. เปิดโปรแกรม แล้วปล่อยให้ทำงานอยู่เบื้องหลัง (ย่อลง System Tray ได้)
-2. ไปที่โปรแกรมไหนก็ได้ — Discord, LINE, Word, Chrome
-3. พิมพ์ข้อความภาษาไทย
-4. กด **`Ctrl + Alt + T`** (เปลี่ยนคีย์ลัดได้ในแท็บตั้งค่า)
-5. ข้อความกลายเป็นคำแปลทันที
+1. Start the app and leave it running — closing the window sends it to the tray
+2. Go to any application: Discord, LINE, Word, Chrome
+3. Type your message
+4. Press **`Ctrl + Alt + T`** (changeable in Settings)
+5. The text becomes its translation
 
-> **ทิปส์** — ถ้าใช้ในช่องแชท แนะนำโหมด *เลือกทั้งหมด (Ctrl+A)*
-> ถ้าใช้ในเอกสารยาว แนะนำโหมด *จากต้นบรรทัด (Shift+Home)* จะได้ไม่แปลทั้งเอกสาร
-
----
-
-## ⏳ แอนิเมชันตอนกำลังแปล
-
-เพราะบางเอนจินตอบช้า และการกดคีย์ลัดแล้วไม่มีอะไรเกิดขึ้นเลยทำให้เหมือนโปรแกรมค้าง
-เวลากดคีย์ลัด ป้ายเล็กๆ จะโผล่ขึ้นมา **ตรงข้อความที่กำลังแปล** และลอยเหนือทุกหน้าต่างจนกว่าจะเสร็จ
-
-| สถานะ | สิ่งที่เห็น |
-|---|---|
-| กำลังอ่านข้อความ | วงหมุน + ชื่อเอนจินที่ใช้ |
-| กำลังแปล | ข้อความต้นฉบับวิ่งไล่แสง + แถบความคืบหน้า + ตัวนับวินาที (โผล่หลัง 1.4 วิ) |
-| เสร็จ / ล้มเหลว | ✓ เขียว หรือ ✕ แดงพร้อมสาเหตุ แล้วค่อยๆ จางหาย |
-
-ถ้าเอนจินช้าเกิน 6 วินาที ข้อความจะเปลี่ยนเป็น "ยังแปลอยู่ รอสักครู่…" เพื่อบอกว่ายังทำงานอยู่
-
-**หาตำแหน่งได้อย่างไร** — ไล่ตามลำดับความแม่นยำ:
-
-1. ตำแหน่งเคอร์เซอร์จริง (`GetGUIThreadInfo`) — ใช้ได้กับ Notepad, Word, ช่องกรอกแบบ Win32
-2. กรอบของช่องที่โฟกัสอยู่ ถ้าเป็นคอนโทรลย่อยจริงๆ
-3. ถ้าเป็นหน้าต่าง Chromium/Electron ทั้งบาน (Discord, LINE, Slack, เบราว์เซอร์) Windows ไม่บอกตำแหน่งเคอร์เซอร์ — จึงวางกลางจอเหนือขอบล่าง ซึ่งเป็นที่ตั้งของช่องแชท
-
-ป้ายนี้ **คลิกทะลุ** และ **ไม่แย่งโฟกัส** เด็ดขาด เพราะขั้นตอนหลังจากนั้นคือการส่ง
-`Ctrl+A` / `Ctrl+C` / `Ctrl+V` ไปยังหน้าต่างที่โฟกัสอยู่ — ถ้าป้ายแย่งโฟกัสไป คีย์ลัดจะพังทันที
-รายละเอียด Win32 ที่ต้องระวังอยู่ใน [`win_overlay.py`](win_overlay.py)
-
-ปิดได้ที่ **แท็บตั้งค่า › หัวข้อที่ 4**
+> **Tip** — use *Whole box (Ctrl+A)* in chat apps, and *From line start
+> (Shift+Home)* in long documents so you do not translate the entire file.
 
 ---
 
-## 🏗️ สถาปัตยกรรม
+## Configuration
 
-หน้าตาโปรแกรมเป็น **React** เรนเดอร์ด้วย **WebView2** ที่ติดมากับ Windows อยู่แล้ว
-ส่วนงานที่คุยกับ Windows ยังเป็น **Python** ทั้งหมด
+Everything is editable in the app; `config.json` is written for you on first
+run.
+
+> ⚠️ `config.json` holds your **API keys**. It is in `.gitignore` — never
+> commit it.
+
+| Key | Meaning | Default |
+|---|---|---|
+| `hotkey` | The global hotkey | `ctrl+alt+t` |
+| `selection_mode` | `all` / `smart` / `line` / `selection` | `all` |
+| `swap_lang_a` / `swap_lang_b` | The two languages to swap between | `th` / `en` |
+| `translation_engine` | Which engine to use | `google_gtx` |
+| `show_progress_overlay` | The floating "translating…" chip | `true` |
+| `show_toast_notification` | The result toast in the corner | `true` |
+| `app_language` | Interface language | `th` |
+
+---
+
+## Architecture
+
+The interface is **React** rendered by the **WebView2** runtime that already
+ships with Windows. Everything that talks to Windows stays in **Python**.
 
 ```
-  React (ui/dist/index.html)  ─── เรนเดอร์โดย WebView2
-        │  window.pywebview.api      →  api_bridge.Api      (JS เรียก Python)
-        │  window.__typistEvent      ←  Api.push_event      (Python ส่งอีเวนต์กลับ)
+  React (ui/dist/index.html)  ─── rendered by WebView2
+        │  window.pywebview.api      →  api_bridge.Api    (JS calls Python)
+        │  window.__typistEvent      ←  Api.push_event    (Python pushes back)
   Python backend
-        hotkey_manager    คีย์ลัดทั่วระบบ + เลือก/คัดลอก/แปล/วาง
-        overlay_window    ป้าย "กำลังแปล…" ลอยเหนือทุกหน้าต่าง
-        toast_window      ป๊อปอัปแจ้งผลมุมขวาล่าง
-        win_overlay       Win32 ที่หน้าต่างลอยทั้งสองใช้ร่วมกัน
-        translator_core   5 เอนจิน + ตรวจภาษา + translation memory
-        http_pool         การเชื่อมต่อแบบ keep-alive
-        history_store     ประวัติการแปล (เขียนจากเธรดคีย์ลัดได้)
-        tray_manager      ไอคอน System Tray
-        i18n              คำแปลหน้าตาโปรแกรม (ใช้ร่วมกันทั้งสองฝั่ง)
-        about             ชื่อผู้สร้าง ลิงก์ และเวอร์ชัน
+        hotkey_manager    global hotkey, then select / copy / translate / paste
+        overlay_window    the "translating…" chip above every window
+        toast_window      the result notification in the corner
+        win_overlay       the Win32 both floating windows share
+        translator_core   five engines, language detection, translation memory
+        http_pool         keep-alive connections
+        history_store     translation history, written from the hotkey thread
+        tray_manager      system tray icon and menu
+        i18n              interface catalogs, shared with the front end
+        about             author, links and version
 ```
 
-**ทำไมถึงไม่ใช้ Tkinter** — เวอร์ชันก่อนใช้ CustomTkinter ซึ่งวาดทุก widget ลง canvas ด้วย Python
-สร้าง widget หนึ่งตัวใช้เวลา **4–12 ms** ทั้งหน้าต่างมี ~573 ตัว เปิดโปรแกรมช้าและสลับแท็บหน่วง
+**Why not Tkinter.** The previous build used CustomTkinter, which draws every
+widget onto a canvas from Python. One widget costs **4–12 ms** and the window
+has ~573 of them, so it was slow to open and laggy to navigate.
 
 | | CustomTkinter (V3) | WebView + React (V4) |
 |---|---|---|
-| เปิดโปรแกรมจนใช้งานได้ | 3,209 ms | **~1,000 ms** |
-| สลับแท็บ (ครั้งแรก) | 419–880 ms | **< 1 ms** |
-| สลับแท็บ (ครั้งต่อไป) | ~149 ms | **< 1 ms** |
-| เปลี่ยนภาษาโปรแกรม | สร้าง UI ใหม่ทั้งหมด | เปลี่ยน state ของ React |
-| Animation | เอนจินเขียนเอง 60 FPS | CSS transitions (GPU) |
+| Startup to interactive | 3,209 ms | **~1,000 ms** |
+| First tab switch | 419–880 ms | **< 1 ms** |
+| Later tab switches | ~149 ms | **< 1 ms** |
+| Changing interface language | rebuild the whole UI | a React state change |
+| Animation | a hand-written 60 FPS engine | CSS transitions on the GPU |
 
-UI ทั้งหมดถูก inline เป็นไฟล์ HTML ไฟล์เดียว ~200 KB ไม่ต้องมีเซิร์ฟเวอร์ ไม่ต้องแบก Chromium
+The whole interface is inlined into a single ~200 KB HTML file. No server, no
+bundled Chromium.
 
 ---
 
-## 📁 โครงสร้างไฟล์
+## Project layout
 
-| ไฟล์ | หน้าที่ |
+| File | Purpose |
 |---|---|
-| `main.py` | จุดเริ่มโปรแกรม เชื่อม WebView + คีย์ลัด + Tray |
-| `about.py` | **ชื่อผู้สร้าง ลิงก์ และเวอร์ชัน — แก้ที่นี่ที่เดียว** |
-| `api_bridge.py` | สัญญาระหว่าง Python กับ React (17 เมธอดที่ JS เรียกได้) |
-| `hotkey_manager.py` | คีย์ลัดทั่วระบบ และขั้นตอนเลือก-คัดลอก-แปล-วาง |
-| `translator_core.py` | เอนจินแปลทั้งหมด + ฐานข้อมูล 100+ ภาษา + cache |
-| `overlay_window.py` | ป้าย "กำลังแปล…" ที่ลอยข้างข้อความ |
-| `toast_window.py` | ป๊อปอัปลอยแจ้งผล |
-| `win_overlay.py` | Win32 ของหน้าต่างลอย: ไม่แย่งโฟกัส, คลิกทะลุ, หาตำแหน่งเคอร์เซอร์ |
-| `history_store.py` | ประวัติการแปล ปลอดภัยต่อการเขียนข้ามเธรด |
-| `http_pool.py` | Connection pool แบบ keep-alive |
-| `i18n.py` | คำแปลหน้าตาโปรแกรม 4 ภาษา (ส่งให้ React ตอน bootstrap) |
-| `tray_manager.py` | ไอคอนใน System Tray |
-| `config_manager.py` | อ่าน/เขียน `config.json` |
-| `make_icon.py` | สร้าง `icon.ico` + ไอคอนโปร่งใสจาก `icon.png` |
-| `ui/src/` | ซอร์ส React (แก้ที่นี่แล้วสั่ง `build_ui.bat`) |
-| `ui/dist/` | UI ที่สร้างแล้ว (ไฟล์เดียวจบ ~200 KB) |
+| `main.py` | Entry point — wires the WebView, hotkey and tray together |
+| `about.py` | **Author, links and version — the one file to edit** |
+| `api_bridge.py` | The Python ↔ React contract (17 methods JavaScript may call) |
+| `hotkey_manager.py` | Global hotkey and the select / copy / translate / paste workflow |
+| `translator_core.py` | Every engine, the 100+ language database, and the cache |
+| `overlay_window.py` | The floating "translating…" chip |
+| `toast_window.py` | The result notification |
+| `win_overlay.py` | Win32 for the floating windows: no focus theft, click-through, caret finding |
+| `history_store.py` | Thread-safe translation history |
+| `http_pool.py` | Keep-alive connection pool |
+| `i18n.py` | Interface catalogs for four languages |
+| `tray_manager.py` | System tray icon |
+| `config_manager.py` | Reads and writes `config.json` |
+| `make_icon.py` | Regenerates `icon.ico` and the transparent icons from `icon.png` |
+| `ui/src/` | React sources — edit here, then run `build_ui.bat` |
+| `ui/dist/` | The built interface (one file, ~200 KB) |
 
 ---
 
-## ⚙️ การตั้งค่า
+## Interface languages
 
-ค่าทั้งหมดอยู่ใน `config.json` ซึ่งสร้างอัตโนมัติเมื่อเปิดโปรแกรมครั้งแรก
-แก้ผ่านหน้าโปรแกรมได้เลย ไม่ต้องแก้ไฟล์เอง
+Change it in **Settings → section 1**; it applies immediately.
 
-> ⚠️ `config.json` มี **API Key** ของคุณอยู่ — ไฟล์นี้อยู่ใน `.gitignore` แล้ว **อย่า commit ขึ้น GitHub**
-
-| ค่า | ความหมาย | ค่าเริ่มต้น |
-|---|---|---|
-| `hotkey` | คีย์ลัดที่ใช้แปล | `ctrl+alt+t` |
-| `selection_mode` | วิธีเลือกข้อความ: `all` / `smart` / `line` / `selection` | `all` |
-| `swap_lang_a` / `swap_lang_b` | คู่ภาษาที่สลับกัน | `th` / `en` |
-| `translation_engine` | เอนจินที่ใช้ | `google_gtx` |
-| `show_progress_overlay` | แสดงป้าย "กำลังแปล…" | `true` |
-| `show_toast_notification` | แสดงป๊อปอัปแจ้งผล | `true` |
-| `app_language` | ภาษาของหน้าโปรแกรม | `th` |
-
----
-
-## 🌍 ภาษาของโปรแกรม
-
-เลือกที่ **แท็บตั้งค่า › หัวข้อที่ 1** เปลี่ยนได้ทันทีโดยไม่ต้องเปิดโปรแกรมใหม่
-
-| ภาษา | โค้ด | ภาษา | โค้ด |
+| | | | |
 |---|---|---|---|
-| 🇹🇭 ไทย | `th` (ค่าเริ่มต้น) | 🇯🇵 日本語 | `ja` |
-| 🇬🇧 English | `en` | 🇨🇳 简体中文 | `zh-CN` |
+| 🇬🇧 English | `en` | 🇯🇵 日本語 | `ja` |
+| 🇹🇭 ไทย | `th` *(default)* | 🇨🇳 简体中文 | `zh-CN` |
 
-ครอบคลุมหน้าต่างหลัก เมนู System Tray หน้าต่างเลือกภาษา ป้ายแปล และป๊อปอัป Toast
+Covers the main window, the tray menu, the language picker, the progress chip
+and the toast.
 
-**เพิ่มภาษาใหม่:** แก้ [`i18n.py`](i18n.py) ไฟล์เดียว — เพิ่มรายการใน `UI_LANGUAGES` และ `CATALOG["<โค้ด>"]`
-คีย์ที่ยังแปลไม่ครบจะถอยไปใช้อังกฤษแล้วไทยตามลำดับ โปรแกรมไม่พังและไม่โชว์ชื่อคีย์ดิบ
+**Adding a language** is one file: add an entry to `UI_LANGUAGES` and a
+`CATALOG["<code>"]` dictionary in [`i18n.py`](i18n.py). Missing keys fall back
+to English and then Thai, so a partial catalog degrades gracefully instead of
+showing raw key names.
 
 ---
 
-## 🎨 ไอคอนโปรแกรม
+## Icons
 
-ไอคอนหน้าต่าง แถบ Taskbar และ System Tray ใช้ `icon.ico` / `icon_alpha.png` ซึ่งสร้างจาก `icon.png`:
+The window, taskbar and tray icons are generated from `icon.png`:
 
 ```bash
 python make_icon.py
 ```
 
-สคริปต์จะตัดพื้นหลังสี่เหลี่ยมทึบออกให้เหลือเฉพาะตัวไอคอน (โปร่งใส) แล้วสร้าง `icon.ico`
-ครบทุกขนาดที่ Windows ใช้ (16–256 px) เปลี่ยน `icon.png` แล้วสั่งใหม่ได้เลย
-จากนั้นสั่ง `build_ui.bat` เพื่อให้ไอคอนบนหัวหน้าต่างอัปเดตด้วย
+It cuts the solid backdrop away, leaving the badge on transparency, and writes
+`icon.ico` at every size Windows uses (16–256 px) plus the tray and header
+copies. Replace `icon.png` and run it again; then `build_ui.bat` so the header
+icon updates too.
 
-> โปรแกรมกำหนด **AppUserModelID** ของตัวเองไว้ ทำให้ Windows แสดงไอคอนนี้บน Taskbar
-> และปักหมุดได้ แทนที่จะถูกจับรวมกับ Python
+The app also claims its own **AppUserModelID**, so Windows gives it a real
+taskbar button that can be pinned instead of grouping it under Python.
 
 ---
 
-## 🧪 การทดสอบ
+## Tests
 
 ```bash
-python test_app.py       # smoke test: config, เอนจินแปล, คีย์ลัด, API bridge
-python test_backend.py   # backend เต็มรูปแบบ (headless) — สัญญา API, history, cache, i18n, overlay
-python test_webview.py   # เปิดหน้าต่างจริงแล้วขับผ่าน DOM — 39 การตรวจสอบ
+python test_app.py       # smoke test: config, engines, hotkey, API bridge
+python test_backend.py   # 16 headless suites: API contract, history, cache,
+                         # i18n, overlay placement, external-link guard
+python test_webview.py   # 40 checks driven through the real window's DOM
 ```
 
-ทั้งสองชุดหลัง snapshot `config.json` ไว้ก่อนรันแล้วคืนค่าแบบ byte-for-byte พร้อม assert ยืนยัน
-รันเทสต์แล้วการตั้งค่าของคุณไม่เปลี่ยน
+The last two snapshot `config.json` and restore it byte-for-byte, with an
+assertion that it worked — running the tests can never change your settings.
 
 ---
 
-## 🤝 ร่วมพัฒนา
+## Contributing
 
-ยินดีรับ Issue และ Pull Request ครับ
+Issues and pull requests are welcome.
 
-- เจอบั๊ก → เปิด Issue พร้อมบอกว่าใช้โปรแกรมอะไร เอนจินไหน และเกิดอะไรขึ้น
-- อยากได้ฟีเจอร์ → เปิด Issue เล่าปัญหาที่เจอ ไม่ต้องเสนอทางแก้ก็ได้
-- ส่งโค้ด → รัน `python test_backend.py` ให้ผ่านก่อนส่ง PR
+- **Found a bug?** Open an issue and say which application, which engine, and
+  what happened.
+- **Want a feature?** Open an issue describing the problem. You do not need to
+  propose the solution.
+- **Sending code?** Please get `python test_backend.py` passing first.
 
-**เพิ่มเอนจินแปลใหม่:** เพิ่มรายการใน `TRANSLATION_ENGINES` และเขียนฟังก์ชันแปลใน
-[`translator_core.py`](translator_core.py) — ส่วนที่เหลือของโปรแกรมรู้จักมันเองโดยอัตโนมัติ
+**Adding a translation engine:** add an entry to `TRANSLATION_ENGINES` and a
+translate function in [`translator_core.py`](translator_core.py). The rest of
+the app discovers it automatically.
 
 ---
 
-## 👤 ผู้พัฒนา
+## Author
 
 <div align="center">
 
@@ -270,65 +324,54 @@ python test_webview.py   # เปิดหน้าต่างจริงแ�
 
 </div>
 
-> **Mrgunshi** และ **luraselenehalo** คือคนเดียวกัน — บัญชี GitHub ที่ดูแลโปรเจกต์นี้คือ
-> [luraselenehalo](https://github.com/luraselenehalo)
+> **Mrgunshi** and **luraselenehalo** are the same person — this project is
+> maintained from [luraselenehalo](https://github.com/luraselenehalo).
 
-ช่องทางติดตามเพิ่มเติม (Facebook, อีเมล) ยังไม่ได้ตั้งค่า — เพิ่มได้ที่
-[`about.py`](about.py) แล้วเปิดโปรแกรมใหม่ แท็บ "เกี่ยวกับ" จะแสดงให้เอง ไม่ต้องสร้าง UI ใหม่
+More contact links can be added in [`about.py`](about.py); the About tab picks
+them up on the next launch, with no UI rebuild.
 
 ---
 
-## 📄 สัญญาอนุญาต
+## License
 
-เผยแพร่ภายใต้สัญญาอนุญาต [MIT](LICENSE) — ใช้ แก้ไข และแจกจ่ายต่อได้
-ทั้งงานส่วนตัวและงานเชิงพาณิชย์ ขอเพียงคงเครดิตของผู้สร้างไว้
+Released under the [MIT](LICENSE) license — use it, change it and ship it,
+personally or commercially, as long as the author credit stays.
 
 © 2026 Mrgunshi
 
 ---
 
 <details>
-<summary><b>English summary</b></summary>
+<summary><b>ภาษาไทย</b></summary>
 
 <br>
 
-### Typist Translator
+### Typist Translator — แปลภาษาขณะพิมพ์ ในทุกโปรแกรมบน Windows
 
-Translate as you type, in any Windows application, without leaving it.
+พิมพ์ข้อความในโปรแกรมไหนก็ได้ → กดคีย์ลัดหนึ่งครั้ง → คำแปลถูกวางทับลงไปในที่เดิม
+ไม่ต้องเปิดแท็บใหม่ ไม่ต้องคัดลอกไปกลับ ไม่ต้องละมือจากคีย์บอร์ด
 
-Type in any app — a chat box, a document, a browser — and press one hotkey.
-It selects your text, sends it to a translation engine, and pastes the result
-back over it. No copying, no extra tab, no taking your hands off the keyboard.
+**ติดตั้ง (แบบง่ายที่สุด)**
 
-**Features**
+1. โหลดไฟล์ zip จาก [Releases](https://github.com/luraselenehalo/typist-translator/releases/latest) แล้วแตกไฟล์
+2. ติดตั้ง [Python 3.10 ขึ้นไป](https://www.python.org/downloads/) (ติ๊ก *Add Python to PATH*)
+3. ในโฟลเดอร์นั้นสั่ง `pip install -r requirements.txt`
+4. ดับเบิลคลิก `run.bat` แล้วกด `Ctrl + Alt + T` ตอนพิมพ์
 
-- In-place translation triggered by a global hotkey
-- Auto-swap between two languages, chosen from 100+
-- A progress chip pinned above every window while the engine works, anchored
-  at the caret, click-through and focus-safe
-- Five engines: Google Translate, MyMemory (free), DeepL, Gemini, OpenAI/Groq/Local LLM
-- Interface in Thai, English, Japanese and Simplified Chinese
-- In-memory translation cache, keep-alive HTTP pooling, system tray operation
-- No telemetry. History and API keys stay in your local `config.json`
+หน้าตาโปรแกรมสร้างมาให้แล้วในไฟล์ zip — **ไม่ต้องติดตั้ง Node.js**
 
-**Stack** — a Python backend (global hotkey, clipboard, tray) with a React
-interface rendered by the WebView2 runtime that already ships with Windows.
-The whole UI is one inlined ~200 KB HTML file: no server, no bundled Chromium.
+**คุณสมบัติ**
 
-**Install**
+- แปลและแทนที่ในที่เดิม ด้วยคีย์ลัดเดียว ใช้ได้ทุกโปรแกรมที่มีช่องพิมพ์
+- ป้าย "กำลังแปล…" ลอยเหนือทุกหน้าต่าง ขึ้นตรงเคอร์เซอร์ คลิกทะลุได้ ไม่แย่งโฟกัส
+  พร้อมตัวนับวินาทีเมื่อเอนจินตอบช้า
+- สลับภาษาอัตโนมัติ เลือกคู่ภาษาได้จาก 100+ ภาษา
+- 5 เอนจิน: Google Translate, MyMemory (ฟรี), DeepL, Gemini, OpenAI/Groq/Local LLM
+- หน้าตาโปรแกรม 4 ภาษา: ไทย / English / 日本語 / 简体中文 สลับได้ทันที
+- จำคำแปลเดิมไว้ กดซ้ำได้คำตอบใน 0.02 ms
+- ย่อลง System Tray แล้วคีย์ลัดยังทำงานต่อ
+- ข้อความส่งไปยังเอนจินที่คุณเลือกเท่านั้น ประวัติและ API Key อยู่ในเครื่องคุณ ไม่มีการเก็บสถิติ
 
-```bash
-git clone https://github.com/luraselenehalo/typist-translator.git
-cd typist-translator
-pip install -r requirements.txt
-cd ui && npm install && npm run build && cd ..
-python main.py
-```
-
-Requires Windows 10/11, Python 3.10+, Node.js (first build only) and the
-WebView2 runtime (preinstalled on Windows 11).
-
-Made by **Mrgunshi** — [@luraselenehalo](https://github.com/luraselenehalo) on GitHub
-(same person, different handle). Released under the [MIT](LICENSE) license.
+**เปลี่ยนภาษาโปรแกรมเป็นไทย** ได้ที่แท็บตั้งค่า หัวข้อที่ 1 (ค่าเริ่มต้นเป็นไทยอยู่แล้ว)
 
 </details>
