@@ -1,0 +1,14 @@
+# Normalise to LF in the repository, and check out what each platform needs.
+* text=auto eol=lf
+
+# Windows launchers must keep CRLF or the shell mis-parses them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf
+
+*.png binary
+*.ico binary
+
+# The built UI is one generated file; keep it out of diffs and language stats.
+ui/dist/index.html linguist-generated=true -diff
+ui/package-lock.json linguist-generated=true -diff

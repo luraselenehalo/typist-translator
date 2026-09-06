@@ -1,0 +1,25 @@
+# Local settings. Holds the user's hotkey, language pair AND their API keys -
+# never commit this. The app recreates it from the defaults on first run.
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.spec
+# Root-anchored so PyInstaller's output is ignored without catching ui/dist.
+/build/
+/dist/
+
+# Node (the UI toolchain). ui/dist IS committed on purpose: it is one 200 KB
+# HTML file, and shipping it means users can run the app without Node.
+ui/node_modules/
+npm-debug.log*
+.vite/
+
+# Windows / editors
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

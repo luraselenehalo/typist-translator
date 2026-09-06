@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Typist Translator</title>
+    <script>
+      // Installed before any app code so startup failures are never lost.
+      // WebView2 has no visible console, so without this a crash during boot
+      // just leaves the loading spinner on screen with no explanation.
+      window.__typistErrors = [];
+      window.addEventListener('error', (e) => {
+        window.__typistErrors.push(
+          `${e.message} @ ${e.filename || '?'}:${e.lineno}:${e.colno}`,
+        );
+      });
+      window.addEventListener('unhandledrejection', (e) => {
+        const reason = e.reason;
+        window.__typistErrors.push(
+          `unhandled rejection: ${(reason && (reason.stack || reason.message)) || reason}`,
+        );
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

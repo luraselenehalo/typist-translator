@@ -1,0 +1,172 @@
+import { useEffect, useState } from 'react';
+import { call } from '../bridge';
+import { languageLabel, useI18n } from '../i18n';
+import { Button, Section } from './primitives';
+
+const PREF_KEYS = [
+  ['show_progress_overlay', 'settings.prefs.overlay'],
+  ['show_toast_notification', 'settings.prefs.toast'],
+  ['sound_effect', 'settings.prefs.sound'],
+  ['minimize_to_tray_on_close', 'settings.prefs.tray'],
+  ['start_minimized', 'settings.prefs.start_min'],
+];
+
+export default function SettingsPage({
+  config,
+  defaults,
+  uiLanguages,
+  hotkeyPresets,
+  selectionModes,
+  themes,
+  language,
+  onPatch,
+  onLanguageChange,
+}) {
+  const { t } = useI18n();
+  const [hotkeyDraft, setHotkeyDraft] = useState(config.hotkey || '');
+  const [hotkeyError, setHotkeyError] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => setHotkeyDraft(config.hotkey || ''), [config.hotkey]);
+
+  const applyHotkey = async (value) => {
+    const result = await call('set_hotkey', value);
+    if (result.registered) {
+      setHotkeyError('');
+      onPatch({ hotkey: value }, { silent: true });
+      flashSaved();
+    } else {
+      setHotkeyError(t('settings.hotkey.error', { msg: result.message }));
+    }
+  };
+
+  const flashSaved = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const resetDefaults = async () => {
+    const patch = {
+      selection_mode: defaults.selection_mode,
+      show_progress_overlay: defaults.show_progress_overlay,
+      show_toast_notification: defaults.show_toast_notification,
+      sound_effect: defaults.sound_effect,
+      minimize_to_tray_on_close: defaults.minimize_to_tray_on_close,
+      start_minimized: defaults.start_minimized,
+      appearance_mode: defaults.appearance_mode,
+    };
+    onPatch(patch);
+    setHotkeyDraft(defaults.hotkey);
+    await applyHotkey(defaults.hotkey);
+  };
+
+  const presetValue = hotkeyPresets.includes(hotkeyDraft) ? hotkeyDraft : '__custom__';
+
+  return (
+    <>
+      {/* 1. Interface language first: it decides how the rest of this page reads. */}
+      <Section
+        title={t('settings.language.title')}
+        sub={t('settings.language.sub')}
+      />
+      <select
+        className="select settings__control"
+        value={language}
+        onChange={(e) => onLanguageChange(e.target.value)}
+      >
+        {uiLanguages.map((meta) => (
+          <option key={meta.code} value={meta.code}>
+            {languageLabel(meta)}
+          </option>
+        ))}
+      </select>
+
+      <Section title={t('settings.hotkey.title')} sub={t('settings.hotkey.sub')} />
+      <div className="row">
+        <select
+          className="select settings__control"
+          value={presetValue}
+          onChange={(e) => {
+            if (e.target.value === '__custom__') return;
+            setHotkeyDraft(e.target.value);
+            applyHotkey(e.target.value);
+          }}
+        >
+          {hotkeyPresets.map((preset) => (
+            <option key={preset} value={preset}>
+              {preset}
+            </option>
+          ))}
+          <option value="__custom__">{t('settings.hotkey.custom')}</option>
+        </select>
+        <input
+          className="input mono settings__control"
+          placeholder={t('settings.hotkey.placeholder')}
+          value={hotkeyDraft}
+          onChange={(e) => setHotkeyDraft(e.target.value)}
+          onBlur={() => {
+            if (hotkeyDraft && hotkeyDraft !== config.hotkey) {
+              applyHotkey(hotkeyDraft.trim().toLowerCase());
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
+          }}
+        />
+      </div>
+      {hotkeyError ? <div className="error-note">{hotkeyError}</div> : null}
+
+      <Section
+        title={t('settings.selection.title')}
+        sub={t('settings.selection.sub')}
+      />
+      <select
+        className="select settings__control settings__control--wide"
+        value={config.selection_mode}
+        onChange={(e) => onPatch({ selection_mode: e.target.value })}
+      >
+        {selectionModes.map((mode) => (
+          <option key={mode} value={mode}>
+            {`${t(`selection.${mode}.badge`)} — ${t(`selection.${mode}.desc`)}`}
+          </option>
+        ))}
+      </select>
+
+      <Section title={t('settings.prefs.title')} />
+      <div className="prefs">
+        {PREF_KEYS.map(([key, labelKey]) => (
+          <label className="checkrow" key={key}>
+            <input
+              type="checkbox"
+              checked={Boolean(config[key])}
+              onChange={(e) => onPatch({ [key]: e.target.checked })}
+            />
+            <span>{t(labelKey)}</span>
+          </label>
+        ))}
+      </div>
+
+      <Section title={t('settings.theme.title')} />
+      <select
+        className="select settings__control"
+        value={config.appearance_mode}
+        onChange={(e) => onPatch({ appearance_mode: e.target.value })}
+      >
+        {themes.map((theme) => (
+          <option key={theme} value={theme}>
+            {t(`theme.${theme}`)}
+          </option>
+        ))}
+      </select>
+
+      <div className="row settings__actions">
+        <Button variant="quiet" onClick={resetDefaults}>
+          {t('settings.reset')}
+        </Button>
+        {saved ? <span className="saved-note">{t('settings.saved')}</span> : null}
+        <span className="grow" />
+        <span className="muted settings__autosave">{t('models.section2.sub')}</span>
+      </div>
+    </>
+  );
+}
