@@ -260,7 +260,7 @@ class ProgressOverlay:
     def mark_ready(self):
         """Style the window and park it. Call once webview.start() is running."""
         try:
-            self._hwnd = win.find_window(TITLE)
+            self._hwnd = win.find_window(TITLE, timeout=win.HWND_WAIT_SECONDS)
             if not self._hwnd:
                 print("[Overlay] Window handle not found; overlay disabled.")
                 return

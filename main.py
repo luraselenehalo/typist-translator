@@ -23,6 +23,7 @@ keyboard hook, clipboard injection, the tray icon and the floating windows -
 runs in Python.
 """
 import os
+import socket
 import subprocess
 import sys
 import threading
@@ -85,6 +86,23 @@ ENGINE_SHORT_NAMES = {
     "gemini": "Gemini",
     "openai": "LLM",
 }
+
+
+def _free_http_port():
+    """A port for pywebview's local file server, picked fresh each launch.
+
+    pywebview serves ui/dist over http and defaults to a fixed port (42001).
+    Any other process on the machine can bind that first - and because the
+    WSGI server underneath sets SO_REUSEADDR, this app would then happily load
+    *its* page into a WebView that has window.pywebview.api attached to it.
+    Asking the OS for an unused port each launch removes the guess.
+
+    It also stops the test suites loading the installed copy's bundle instead
+    of the one in the checkout, which is how this was noticed.
+    """
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
 
 
 def _set_app_identity():
@@ -349,12 +367,35 @@ def main():
             overlay.update(label=i18n.t("overlay.pasting"),
                            preview=clip(detail.get("text"), PREVIEW_CHARS))
         elif stage == "done":
-            overlay.finish(True, i18n.t("overlay.done"),
+            # Say so when the chosen engine was not the one that answered,
+            # otherwise a silent fallback looks like the engine setting is
+            # being ignored.
+            label = (i18n.t("overlay.done_fallback",
+                            engine=ENGINE_SHORT_NAMES.get(detail.get("engine"),
+                                                          detail.get("engine")))
+                     if detail.get("fell_back") else i18n.t("overlay.done"))
+            overlay.finish(True, label,
                            preview=clip(detail.get("translated"), PREVIEW_CHARS))
+        elif stage == "undoing":
+            overlay.show_working(i18n.t("overlay.undoing"), preview="",
+                                 tag=engine_name(), theme=theme)
+        elif stage == "undone":
+            overlay.finish(True, i18n.t("overlay.undone"),
+                           preview=clip(detail.get("text"), PREVIEW_CHARS))
         elif stage == "failed":
-            if detail.get("kind") == "no_text":
+            kind = detail.get("kind")
+            if kind == "no_text":
                 label, reason = (i18n.t("overlay.no_text"),
                                  i18n.t("overlay.no_text_hint"))
+            elif kind == "no_undo":
+                label, reason = (i18n.t("overlay.no_undo"),
+                                 i18n.t("overlay.no_undo_hint"))
+            elif kind == "undo_changed":
+                label, reason = (i18n.t("overlay.undo_changed"),
+                                 i18n.t("overlay.undo_changed_hint"))
+            elif kind == "blocked":
+                label, reason = (i18n.t("overlay.blocked"),
+                                 i18n.t("overlay.blocked_hint"))
             else:
                 label, reason = (i18n.t("overlay.failed"),
                                  clip(detail.get("reason"), PREVIEW_CHARS))
@@ -433,6 +474,7 @@ def main():
         print("[Main] Typist Translator running successfully.")
 
     webview.start(on_started, private_mode=False, debug=_debug_enabled(),
+                  http_port=_free_http_port(),
                   icon=ICON_ICO if os.path.exists(ICON_ICO) else None)
     shutdown()
     return 0

@@ -616,6 +616,20 @@
   flex-direction: column;
   gap: 6px;
 }
+.settings__undo {
+  margin-top: 8px;
+}
+.settings__inline-label {
+  width: 118px;
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.settings__hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
 .settings__actions {
   margin-top: 10px;
   padding-top: 12px;

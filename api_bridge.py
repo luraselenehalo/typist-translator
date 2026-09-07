@@ -24,8 +24,9 @@ from config_manager import DEFAULT_CONFIG, save_config
 from history_store import HistoryStore
 from translator_core import (
     LANGUAGES_DB, POPULAR_LANG_CODES, TRANSLATION_ENGINES,
-    clear_translation_cache, is_translation_error, search_languages,
-    test_engine_connection, translate_text, translation_error_reason,
+    clear_translation_cache, is_translation_error, reset_engine_cooldowns,
+    search_languages, test_engine_connection, translate_text,
+    translation_error_reason,
 )
 
 SELECTION_MODES = ("all", "smart", "line", "selection")
@@ -203,8 +204,11 @@ class Api:
             self._hotkey_mgr.update_config(self._config)
 
         if engine_changed or model_changed:
-            # Cached results belong to the old engine/model pairing.
+            # Cached results belong to the old engine/model pairing, and a
+            # cooldown recorded against the old settings should not make the
+            # new ones look broken.
             clear_translation_cache()
+            reset_engine_cooldowns()
 
         if "app_language" in patch:
             i18n.set_language(patch["app_language"])
@@ -227,6 +231,31 @@ class Api:
             # Put the previously working hotkey back so the app stays usable.
             self._hotkey_mgr.register_hotkey(self._config.get("hotkey", "ctrl+alt+t"))
         return {"registered": ok, "message": message}
+
+    @_safe
+    def set_undo_hotkey(self, hotkey):
+        """Register the undo combination. An empty string switches undo off.
+
+        Unlike the translate hotkey there is nothing to roll back to: a
+        rejected combination simply leaves undo unbound, which costs the user
+        a safety net but never their ability to translate.
+        """
+        cleaned = (hotkey or "").strip().lower()
+        with self._lock:
+            previous = self._config.get("undo_hotkey", "")
+            self._config["undo_hotkey"] = cleaned
+            self._config["enable_undo"] = bool(cleaned)
+            self._hotkey_mgr.update_config(self._config)
+
+            if cleaned and not self._hotkey_mgr.undo_registered:
+                message = self._hotkey_mgr.undo_error or "could not register"
+                self._config["undo_hotkey"] = previous
+                self._config["enable_undo"] = bool(previous)
+                self._hotkey_mgr.update_config(self._config)
+                return {"registered": False, "message": message}
+
+            save_config(self._config)
+            return {"registered": True, "message": ""}
 
     @_safe
     def set_service_active(self, active):

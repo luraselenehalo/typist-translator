@@ -22,6 +22,13 @@ import paths
 
 DEFAULT_CONFIG = {
     "hotkey": "ctrl+alt+t",
+    "undo_hotkey": "ctrl+alt+z",  # puts the text back the way it was
+    "enable_undo": True,
+    "restore_clipboard": True,    # give back what the user had copied
+    # "paste" uses Ctrl+V. "type" sends the characters themselves, which is
+    # slower but reaches text boxes drawn by a game engine - most of those
+    # never implemented Ctrl+V.
+    "output_mode": "paste",
     "selection_mode": "all",  # "all" (Ctrl+A), "line" (Shift+Home), "smart", "selection"
     "swap_mode": "pair",      # "pair" (Auto-Swap between Lang A & B) or "fixed" (Fixed Target)
     "swap_lang_a": "th",      # Primary language code

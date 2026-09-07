@@ -202,7 +202,7 @@ class UpdatePanel:
         return self._window
 
     def mark_ready(self):
-        self._hwnd = win.find_window(TITLE)
+        self._hwnd = win.find_window(TITLE, timeout=win.HWND_WAIT_SECONDS)
         if not self._hwnd:
             print("[Update] Notification window not found; updates will be silent.")
             return

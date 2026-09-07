@@ -16,6 +16,7 @@ Notes for anyone extending this:
 import functools
 import json
 import os
+import socket
 import sys
 import threading
 import time
@@ -47,6 +48,23 @@ failures = []
 notes = []
 
 
+def _free_http_port():
+    """A port for pywebview's local file server, picked fresh each launch.
+
+    pywebview serves ui/dist over http and defaults to a fixed port (42001).
+    Any other process on the machine can bind that first - and because the
+    WSGI server underneath sets SO_REUSEADDR, this app would then happily load
+    *its* page into a WebView that has window.pywebview.api attached to it.
+    Asking the OS for an unused port each launch removes the guess.
+
+    It also stops the test suites loading the installed copy's bundle instead
+    of the one in the checkout, which is how this was noticed.
+    """
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
 def check(label, condition, detail=""):
     if condition:
         notes.append(f"  [ok]   {label}")
@@ -74,6 +92,11 @@ def main():
               tray_manager=TrayManager(),
               history=history)
 
+    # pywebview serves local files over http on a port it derives itself, so a
+    # copy of the installed app that is already running owns that port - and
+    # this suite then loads *its* bundle instead of the one in the checkout,
+    # silently, reporting on code that is not here. Ask for a port nothing else
+    # will pick.
     window = webview.create_window(
         "Typist Translator", url=UI_ENTRY, js_api=api,
         width=940, height=780, min_size=(720, 560),
@@ -101,7 +124,7 @@ def main():
                 pass
 
     threading.Thread(target=script, daemon=True).start()
-    webview.start(private_mode=False)
+    webview.start(private_mode=False, http_port=_free_http_port())
 
     save_config(original_config)
     i18n.set_language(original_config.get("app_language", "th"))
@@ -176,6 +199,47 @@ def run(js, api, history, window, config):
         check(f"{name} page renders", present is True)
         check(f"{name} switch under 100ms", 0 <= elapsed < 100, f"{elapsed} ms")
     print("  -> " + "  ".join(f"{k}:{v:.1f}ms" for k, v in timings.items()))
+
+    print("\n[UI 3b] The page is running this checkout's bundle...")
+    # Fingerprint the file on disk and look for it in the loaded page. Without
+    # this the suite will happily pass against somebody else's build.
+    with open(UI_ENTRY, encoding="utf-8") as handle:
+        bundle = handle.read()
+    served = js("document.documentElement.outerHTML", "") or ""
+    # Sample several places, not one. Two different builds of this app share
+    # megabytes of identical vendored React, so a single fingerprint taken from
+    # the middle of the file matches a stale bundle by coincidence - which is
+    # exactly how this check first passed against the wrong server.
+    marks = [bundle[int(len(bundle) * f):int(len(bundle) * f) + 80]
+             for f in (0.55, 0.75, 0.9)]
+    missing = [i for i, mark in enumerate(marks) if mark not in served]
+    check("the window loaded the bundle from ui/dist", not missing,
+          f"{len(missing)}/3 fingerprints absent from {len(served)} chars at "
+          f"{js('location.href', '?')} - rebuild with 'cd ui && npm run build', "
+          f"and close any running copy of the app")
+
+    print("\n[UI 3c] Undo hotkey control...")
+    js("document.querySelectorAll('.nav__item')[2].click()", None)
+    undo_value = js("""
+      (() => {
+        const inputs = [...document.querySelectorAll('.settings__undo input')];
+        return inputs.length ? inputs[0].value : null;
+      })()
+    """, None)
+    check("undo hotkey field is on the settings page", undo_value is not None)
+    check("undo hotkey shows the configured combination",
+          undo_value == config.get("undo_hotkey", "ctrl+alt+z"),
+          f"showed {undo_value!r}")
+    labels = js("""
+      [...document.querySelectorAll('.checkrow span')].map((s) => s.textContent)
+    """, [])
+    check("the clipboard preference is offered",
+          any("clipboard" in text.lower() or "คัดลอก" in text for text in labels),
+          f"{labels}")
+    js("document.querySelectorAll('.nav__item')[3].click()", None)
+    steps = js("document.querySelectorAll('.guide-step__title').length", 0)
+    check("undo is explained in the guide", steps == 4,
+          f"the guide should have four steps, found {steps}")
 
     print("\n[UI 4] About tab...")
     js("document.querySelectorAll('.nav__item')[4].click()")

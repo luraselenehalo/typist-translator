@@ -8,6 +8,7 @@ const PREF_KEYS = [
   ['show_progress_overlay', 'settings.prefs.overlay'],
   ['show_toast_notification', 'settings.prefs.toast'],
   ['sound_effect', 'settings.prefs.sound'],
+  ['restore_clipboard', 'settings.prefs.restore_clipboard'],
   ['minimize_to_tray_on_close', 'settings.prefs.tray'],
   ['start_minimized', 'settings.prefs.start_min'],
 ];
@@ -26,11 +27,14 @@ export default function SettingsPage({
   const { t } = useI18n();
   const [hotkeyDraft, setHotkeyDraft] = useState(config.hotkey || '');
   const [hotkeyError, setHotkeyError] = useState('');
+  const [undoDraft, setUndoDraft] = useState(config.undo_hotkey || '');
+  const [undoError, setUndoError] = useState('');
   const [saved, setSaved] = useState(false);
   const [updateNote, setUpdateNote] = useState('');
   const [checking, setChecking] = useState(false);
 
   useEffect(() => setHotkeyDraft(config.hotkey || ''), [config.hotkey]);
+  useEffect(() => setUndoDraft(config.undo_hotkey || ''), [config.undo_hotkey]);
 
   const applyHotkey = async (value) => {
     const result = await call('set_hotkey', value);
@@ -40,6 +44,20 @@ export default function SettingsPage({
       flashSaved();
     } else {
       setHotkeyError(t('settings.hotkey.error', { msg: result.message }));
+    }
+  };
+
+  // Emptying the field is how undo is switched off, so '' is a valid value
+  // here and must not be rejected the way an empty translate hotkey is.
+  const applyUndoHotkey = async (value) => {
+    const result = await call('set_undo_hotkey', value);
+    if (result.registered) {
+      setUndoError('');
+      onPatch({ undo_hotkey: value, enable_undo: Boolean(value) }, { silent: true });
+      flashSaved();
+    } else {
+      setUndoError(t('settings.hotkey.undo_error', { msg: result.message }));
+      setUndoDraft(config.undo_hotkey || '');
     }
   };
 
@@ -55,6 +73,8 @@ export default function SettingsPage({
       show_progress_overlay: defaults.show_progress_overlay,
       show_toast_notification: defaults.show_toast_notification,
       sound_effect: defaults.sound_effect,
+      restore_clipboard: defaults.restore_clipboard,
+      output_mode: defaults.output_mode,
       minimize_to_tray_on_close: defaults.minimize_to_tray_on_close,
       start_minimized: defaults.start_minimized,
       appearance_mode: defaults.appearance_mode,
@@ -62,6 +82,8 @@ export default function SettingsPage({
     onPatch(patch);
     setHotkeyDraft(defaults.hotkey);
     await applyHotkey(defaults.hotkey);
+    setUndoDraft(defaults.undo_hotkey);
+    await applyUndoHotkey(defaults.undo_hotkey);
   };
 
   const presetValue = hotkeyPresets.includes(hotkeyDraft) ? hotkeyDraft : '__custom__';
@@ -139,6 +161,25 @@ export default function SettingsPage({
       </div>
       {hotkeyError ? <div className="error-note">{hotkeyError}</div> : null}
 
+      <div className="row settings__undo">
+        <span className="settings__inline-label">{t('settings.hotkey.undo')}</span>
+        <input
+          className="input mono settings__control"
+          placeholder={t('settings.hotkey.undo_placeholder')}
+          value={undoDraft}
+          onChange={(e) => setUndoDraft(e.target.value)}
+          onBlur={() => {
+            const next = undoDraft.trim().toLowerCase();
+            if (next !== (config.undo_hotkey || '')) applyUndoHotkey(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') e.currentTarget.blur();
+          }}
+        />
+      </div>
+      <div className="settings__hint">{t('settings.hotkey.undo_sub')}</div>
+      {undoError ? <div className="error-note">{undoError}</div> : null}
+
       <Section
         title={t('settings.selection.title')}
         sub={t('settings.selection.sub')}
@@ -168,6 +209,19 @@ export default function SettingsPage({
           </label>
         ))}
       </div>
+
+      <Section
+        title={t('settings.output.title')}
+        sub={t('settings.output.sub')}
+      />
+      <select
+        className="select settings__control settings__control--wide"
+        value={config.output_mode || 'paste'}
+        onChange={(e) => onPatch({ output_mode: e.target.value })}
+      >
+        <option value="paste">{t('settings.output.paste')}</option>
+        <option value="type">{t('settings.output.type')}</option>
+      </select>
 
       <Section title={t('settings.theme.title')} />
       <select

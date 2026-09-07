@@ -69,6 +69,8 @@ user32.ClientToScreen.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.POINT)]
 user32.GetWindowRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
 user32.MonitorFromPoint.argtypes = [wintypes.POINT, wintypes.DWORD]
 user32.MonitorFromPoint.restype = wintypes.HANDLE
+user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
+user32.MonitorFromWindow.restype = wintypes.HANDLE
 user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MONITORINFO)]
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int,
                                 ctypes.c_int, ctypes.c_int, ctypes.c_int,
@@ -95,6 +97,7 @@ _SetWindowLong.restype = ctypes.c_ssize_t
 GWL_EXSTYLE = -20
 WS_EX_TRANSPARENT = 0x00000020
 WS_EX_TOOLWINDOW = 0x00000080
+WS_EX_APPWINDOW = 0x00040000
 WS_EX_LAYERED = 0x00080000
 WS_EX_NOACTIVATE = 0x08000000
 
@@ -120,8 +123,27 @@ PARK_Y = -4000
 # =====================================================================
 # Window handling
 # =====================================================================
-def find_window(title):
-    return user32.FindWindowW(None, title) or None
+#: How long to wait for a pywebview window to actually exist.
+HWND_WAIT_SECONDS = 6.0
+
+
+def find_window(title, timeout=0.0, poll=0.02):
+    """The handle for a window title, optionally waiting for it to appear.
+
+    pywebview runs its ``start`` callback on its own thread as soon as the GUI
+    loop is up, which is not the same moment as the secondary windows being
+    realised - so a single FindWindowW is a race. Losing it used to leave the
+    chip, the toast and the update card permanently disabled for the whole
+    session, and the only sign was one line on a console the app does not have.
+    """
+    deadline = time.perf_counter() + timeout
+    while True:
+        hwnd = user32.FindWindowW(None, title)
+        if hwnd:
+            return hwnd
+        if time.perf_counter() >= deadline:
+            return None
+        time.sleep(poll)
 
 
 def apply_overlay_styles(hwnd, click_through=False):
@@ -130,11 +152,25 @@ def apply_overlay_styles(hwnd, click_through=False):
     ``click_through`` is for windows the user should be able to click *past* -
     the progress chip sits right where they are typing. The toast is meant to
     be clickable, so it leaves it off.
+
+    ``WS_EX_APPWINDOW`` has to be cleared, not merely out-voted. WinForms sets
+    it on every form it shows, and it *beats* WS_EX_TOOLWINDOW: a window
+    carrying both is still listed. Leaving it on put the chip, the toast and
+    the update card in Alt+Tab and on the taskbar as three extra "Typist"
+    entries with nothing in them.
     """
-    style = _GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
+    style = _GetWindowLong(hwnd, GWL_EXSTYLE)
+    style |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
+    style &= ~WS_EX_APPWINDOW
     if click_through:
         style |= WS_EX_TRANSPARENT | WS_EX_LAYERED
     _SetWindowLong(hwnd, GWL_EXSTYLE, style)
+    # The shell samples these styles when a window is shown, so a window that
+    # is already visible keeps the taskbar button it was given at birth. Every
+    # caller creates its window visible - hiding it here is what makes the
+    # change stick, and each of them parks the window off-screen immediately
+    # afterwards anyway.
+    hide(hwnd)
 
 
 def make_layered(hwnd, alpha=255):
@@ -321,9 +357,30 @@ def place_rect(anchor, size, work):
     return int(left), int(top)
 
 
+def foreground_work_area():
+    """Usable area of the monitor holding whatever window has focus.
+
+    Not the primary monitor. Plenty of people keep a game on a second screen
+    and chat on the first, and a notification about that game belongs on the
+    screen they are looking at. On a single-monitor machine this answers
+    exactly what monitor_work_area(0, 0) did.
+    """
+    try:
+        handle = user32.MonitorFromWindow(user32.GetForegroundWindow(),
+                                          MONITOR_DEFAULTTONEAREST)
+        info = MONITORINFO()
+        info.cbSize = ctypes.sizeof(MONITORINFO)
+        if handle and user32.GetMonitorInfoW(handle, ctypes.byref(info)):
+            work = info.rcWork
+            return work.left, work.top, work.right, work.bottom
+    except Exception:
+        pass
+    return monitor_work_area(0, 0)
+
+
 def bottom_right(width, height, margin_x=24, margin_y=64):
-    """Where a corner notification goes, on the primary monitor's work area."""
-    left, top, right, bottom = monitor_work_area(0, 0)
+    """Where a corner notification goes, on the screen the user is using."""
+    left, top, right, bottom = foreground_work_area()
     return (max(left, right - width - margin_x),
             max(top, bottom - height - margin_y))
 

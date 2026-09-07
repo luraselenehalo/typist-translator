@@ -28,7 +28,7 @@ export default function GuidePage({ engines }) {
         <div className="guide-hero__sub">{t('guide.hero.sub')}</div>
       </div>
 
-      {[1, 2, 3].map((n) => (
+      {[1, 2, 3, 4].map((n) => (
         <div className="card card--sunken card--hover guide-step" key={n}>
           <span className="guide-step__num">{n}</span>
           <div>

@@ -61,6 +61,44 @@ def clear_translation_cache():
         _cache.clear()
 
 
+# =====================================================================
+# Engine cooldown
+# =====================================================================
+#: How long an engine is moved to the back of the queue after it fails.
+#: A rate-limited endpoint stays rate-limited for minutes, and without this
+#: every single translation would pay that engine's timeout again before
+#: reaching the one that actually works.
+ENGINE_COOLDOWN_SECONDS = 90
+
+_cooldown = {}
+_cooldown_lock = threading.Lock()
+
+
+def _mark_engine_failed(engine):
+    with _cooldown_lock:
+        _cooldown[engine] = time.time() + ENGINE_COOLDOWN_SECONDS
+
+
+def _mark_engine_working(engine):
+    with _cooldown_lock:
+        _cooldown.pop(engine, None)
+
+
+def _engine_in_cooldown(engine) -> bool:
+    with _cooldown_lock:
+        until = _cooldown.get(engine, 0)
+        if until and until <= time.time():
+            del _cooldown[engine]
+            return False
+        return bool(until)
+
+
+def reset_engine_cooldowns():
+    """Forget every recorded failure (call when engine settings change)."""
+    with _cooldown_lock:
+        _cooldown.clear()
+
+
 # A language-neutral sentinel so callers can detect a failed translation
 # without matching a localised message.
 TRANSLATION_ERROR_PREFIX = "[TRANSLATE_ERROR]"
@@ -467,13 +505,80 @@ def translate_openai(text: str, source_lang: str, target_lang: str, api_key: str
 # Main Unified Translator Router with Auto-Fallback
 # =====================================================================
 
-def translate_text(text: str, config: dict = None, target_lang_setting: str = "auto_swap") -> tuple[str, str, str]:
-    """
-    Translates input text using the configured translation engine and language pair.
-    Automatically falls back to Google Translate GTX if the primary engine fails.
+#: Engines that need no API key, in the order they are tried when the chosen
+#: engine fails. Google first because it is the better translator; MyMemory
+#: second because it survives the rate limit that usually takes Google down.
+FREE_FALLBACKS = ("google_gtx", "mymemory")
 
-    Returns:
-        tuple (translated_text, source_lang, target_lang)
+
+class EngineUnavailable(Exception):
+    """An engine cannot even be attempted - normally a missing API key."""
+
+
+def _call_engine(engine: str, text: str, source_lang: str, target_lang: str,
+                 cfg: dict) -> tuple[str, str, str]:
+    """Run exactly one engine. Raises on any failure so the caller moves on."""
+    keys = cfg.get("engine_api_keys", {}) or {}
+    models = cfg.get("engine_models", {}) or {}
+
+    if engine == "mymemory":
+        return translate_mymemory(text, source_lang, target_lang)
+    if engine == "deepl":
+        key = keys.get("deepl", "")
+        if not key:
+            raise EngineUnavailable("DeepL has no API key")
+        return translate_deepl(text, source_lang, target_lang, key)
+    if engine == "gemini":
+        key = keys.get("gemini", "")
+        if not key:
+            raise EngineUnavailable("Gemini has no API key")
+        return translate_gemini(text, source_lang, target_lang, key,
+                                models.get("gemini", "gemini-1.5-flash"))
+    if engine == "openai":
+        key = keys.get("openai", "")
+        if not key:
+            raise EngineUnavailable("OpenAI has no API key")
+        return translate_openai(text, source_lang, target_lang, key,
+                                models.get("openai", "gpt-4o-mini"),
+                                cfg.get("openai_base_url",
+                                        "https://api.openai.com/v1"))
+    return translate_google_gtx(text, source_lang, target_lang)
+
+
+def engine_chain(engine: str) -> list:
+    """The chosen engine, then the free ones to fall back to.
+
+    The old code fell back to Google unconditionally, which achieved nothing
+    when Google *was* the chosen engine - and Google is the default. A
+    rate-limited GTX endpoint simply failed twice and gave up, with MyMemory
+    sitting right there unused.
+
+    Fallbacks are restricted to the key-less engines on purpose: a failure
+    should never quietly spend someone's DeepL or OpenAI credit, and an engine
+    the user has no key for would only fail again anyway.
+    """
+    chain = [engine]
+    chain.extend(name for name in FREE_FALLBACKS if name != engine)
+    return chain
+
+
+def translate_text(text: str, config: dict = None,
+                   target_lang_setting: str = "auto_swap",
+                   report: dict = None) -> tuple[str, str, str]:
+    """
+    Translate with the configured engine, falling back to the free ones.
+
+    Returns ``(translated_text, source_lang, target_lang)``. On total failure
+    the first element carries ``TRANSLATION_ERROR_PREFIX``; use
+    ``is_translation_error`` rather than matching a message.
+
+    Pass ``report`` as a dict to find out what actually happened::
+
+        info = {}
+        translate_text(text, config=cfg, report=info)
+        info["engine"]     # the engine that produced the result
+        info["fell_back"]  # True when that was not the configured one
+        info["errors"]     # what each failed engine said
     """
     trimmed = text.strip()
     if not trimmed:
@@ -492,45 +597,52 @@ def translate_text(text: str, config: dict = None, target_lang_setting: str = "a
 
     source_lang, target_lang = detect_languages_universal(trimmed, lang_a, lang_b, swap_mode)
 
+    def note(**fields):
+        if report is not None:
+            report.update(fields)
+
     # Serve repeats from the translation memory before touching the network.
-    cache_key = (_cache_signature(engine, cfg), source_lang, target_lang, trimmed)
-    cached = _cache_get(cache_key)
+    cached = _cache_get((_cache_signature(engine, cfg), source_lang, target_lang, trimmed))
     if cached is not None:
+        note(engine=engine, fell_back=False, cached=True, errors=[])
         return cached
 
-    try:
-        if engine == "mymemory":
-            result = translate_mymemory(trimmed, source_lang, target_lang)
-        elif engine == "deepl":
-            key = cfg.get("engine_api_keys", {}).get("deepl", "")
-            result = translate_deepl(trimmed, source_lang, target_lang, key)
-        elif engine == "gemini":
-            key = cfg.get("engine_api_keys", {}).get("gemini", "")
-            model = cfg.get("engine_models", {}).get("gemini", "gemini-1.5-flash")
-            result = translate_gemini(trimmed, source_lang, target_lang, key, model)
-        elif engine == "openai":
-            key = cfg.get("engine_api_keys", {}).get("openai", "")
-            model = cfg.get("engine_models", {}).get("openai", "gpt-4o-mini")
-            base_url = cfg.get("openai_base_url", "https://api.openai.com/v1")
-            result = translate_openai(trimmed, source_lang, target_lang, key, model, base_url)
-        else:
-            result = translate_google_gtx(trimmed, source_lang, target_lang)
+    # An engine that failed recently goes to the back of the queue rather than
+    # being dropped, so a transient blip can never leave the user with nothing.
+    chain = engine_chain(engine)
+    ordered = ([name for name in chain if not _engine_in_cooldown(name)]
+               + [name for name in chain if _engine_in_cooldown(name)])
 
-        _cache_put(cache_key, result)
+    errors = []
+    for candidate in ordered:
+        if candidate != engine:
+            hit = _cache_get((_cache_signature(candidate, cfg), source_lang,
+                              target_lang, trimmed))
+            if hit is not None:
+                note(engine=candidate, fell_back=True, cached=True, errors=errors)
+                return hit
+        try:
+            result = _call_engine(candidate, trimmed, source_lang, target_lang, cfg)
+        except Exception as exc:
+            errors.append(f"{candidate}: {exc}")
+            _mark_engine_failed(candidate)
+            print(f"[Translator] Engine '{candidate}' failed: {exc}")
+            continue
+
+        _mark_engine_working(candidate)
+        # Cached under the engine that actually answered, so switching engines
+        # later never serves a result the new engine did not produce.
+        _cache_put((_cache_signature(candidate, cfg), source_lang, target_lang,
+                    trimmed), result)
+        if candidate != engine:
+            print(f"[Translator] Fell back to '{candidate}'")
+        note(engine=candidate, fell_back=candidate != engine, cached=False,
+             errors=errors)
         return result
 
-    except Exception as e:
-        print(f"[Translator] Engine '{engine}' failed: {e}. Falling back to Google GTX...")
-        # Graceful fallback to Google Translate GTX
-        try:
-            result = translate_google_gtx(trimmed, source_lang, target_lang)
-            # Cached under the fallback engine so switching back to the primary
-            # engine later does not serve a Google result.
-            _cache_put(("google_gtx", source_lang, target_lang, trimmed), result)
-            return result
-        except Exception as fallback_err:
-            print(f"[Translator] Google GTX fallback also failed: {fallback_err}")
-            return f"{TRANSLATION_ERROR_PREFIX} {e}", source_lang, target_lang
+    note(engine="", fell_back=False, cached=False, errors=errors)
+    reason = errors[0].split(": ", 1)[-1] if errors else "no engine available"
+    return f"{TRANSLATION_ERROR_PREFIX} {reason}", source_lang, target_lang
 
 
 def test_engine_connection(engine: str, config: dict) -> tuple[bool, str, int]:

@@ -188,7 +188,8 @@ class ToastHUD:
         return self._window
 
     def mark_ready(self):
-        self._hwnd = win.find_window("Typist Toast")
+        self._hwnd = win.find_window("Typist Toast",
+                                     timeout=win.HWND_WAIT_SECONDS)
         if not self._hwnd:
             print("[ToastHUD] Window handle not found; toast disabled.")
             return
