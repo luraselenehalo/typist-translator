@@ -12,7 +12,7 @@ Type in any app → press one hotkey → your text is replaced by its translatio
 ![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%2F%2011-0078d4)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776ab)
 ![UI](https://img.shields.io/badge/UI-React%20%2B%20WebView2-61dafb)
-[![Download](https://img.shields.io/badge/Download-v3.1.0-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
+[![Download](https://img.shields.io/badge/Download-latest%20release-2ea44f)](https://github.com/luraselenehalo/typist-translator/releases/latest)
 
 Made by **Mrgunshi** ([@luraselenehalo](https://github.com/luraselenehalo))
 
@@ -130,9 +130,13 @@ Light theme is a click away:
 
 ### Option 1 — the installer *(nothing else needed)*
 
-Download **`TypistTranslator-Setup-3.1.0.exe`** from
+Download **`TypistTranslator-Setup-<version>.exe`** from
 **[Releases](https://github.com/luraselenehalo/typist-translator/releases/latest)**
 and run it. No Python, no Node.js, no command line.
+
+> The only address these builds are published from is
+> **github.com/luraselenehalo/typist-translator**. A copy of this app offered
+> anywhere else did not come from me.
 
 It installs for your user only, so Windows never asks for administrator rights.
 The wizard opens by asking which of the four interface languages you want, and
@@ -140,14 +144,46 @@ its last page offers a Desktop shortcut and start-with-Windows.
 
 Once installed the app keeps itself up to date — see below.
 
-> **The SmartScreen warning.** This build is not code-signed, so Windows shows
-> *"Windows protected your PC"* the first time. Click **More info → Run
-> anyway**. A certificate costs a few hundred dollars a year and this is a free
-> project; if that bothers you, build it yourself — `python build.py` produces
-> exactly the published files.
+#### Windows will warn you the first time
 
-`TypistTranslator-3.1.0-portable.zip` is the same build in a folder you can
-unpack anywhere. It cannot update itself, and its README says so.
+You will see a blue **"Windows protected your PC"** box saying
+*Publisher: Unknown publisher*. Click **More info**, then **Run anyway**.
+
+That is expected, and it is not a judgement about the file. Windows shows it
+for every application that has not been signed with a paid code-signing
+certificate, and this one has not been. It will keep appearing on each new
+version until that changes — see
+**[Security and signing](docs/SECURITY.md)** for what it would take and where
+that currently stands.
+
+What you can check instead, before running anything:
+
+- **Compare the checksum.** Every release ships `SHA256SUMS.txt`. In PowerShell:
+  `Get-FileHash .\TypistTranslator-Setup-<version>.exe`
+- **Read the scan.** Each release links a VirusTotal report for both files.
+- **Build it yourself.** `python build.py` produces exactly the published
+  files, from the source in this repository.
+
+#### Or install without the warning
+
+Both of these skip the dialog entirely, and neither needs anything installed
+first beyond the package manager itself:
+
+```powershell
+winget install Mrgunshi.TypistTranslator
+```
+
+```powershell
+scoop bucket add typist https://github.com/luraselenehalo/scoop-bucket
+scoop install typist-translator
+```
+
+#### The portable build
+
+`TypistTranslator-<version>-portable.zip` is the same build in a folder you can
+unpack anywhere. It cannot update itself, and its README says so. Note that
+Windows carries the same warning across to files extracted from a downloaded
+zip, so this is not a way around the dialog.
 
 ### Option 2 — from source
 
@@ -187,6 +223,66 @@ lives in exactly one place.
 
 > **Tip** — use *Whole box (Ctrl+A)* in chat apps, and *From line start
 > (Shift+Home)* in long documents so you do not translate the entire file.
+
+---
+
+## Using it in games
+
+Until 3.2.0 this did not work in games at all, and the reason turned out to be
+one number. The app sent keystrokes with a **scan code of zero**. Ordinary
+windows — Discord, Word, a browser — read the *virtual key* and were perfectly
+happy, so nothing looked wrong. Games read the *scan code*, through DirectInput
+or Raw Input, saw zero, and discarded every keystroke the app had ever sent
+them. That is fixed: keys now carry their real scan code, extended keys are
+flagged properly, and they are held long enough for a game running at 30 fps to
+notice them.
+
+If a game's chat box still shows nothing, it is almost certainly because the box
+never implemented Ctrl+V. Go to **Settings → section 6** and choose
+**Type the characters**. It is slower, but it sends the text itself rather than
+asking the box to paste, which is what game text fields understand.
+
+### When it still will not work
+
+Run the diagnostic and it will tell you which part is failing:
+
+```bash
+python test_game_input.py
+```
+
+Click into the game's chat box during the countdown. It reports whether the
+keystrokes arrive at all, whether the box supports Ctrl+A/Ctrl+C so the app can
+*read* what you typed, and whether it supports Ctrl+V. Please include that table
+when reporting a game that does not work.
+
+Two limits worth knowing about, neither of which this app can fix:
+
+- **If the box cannot be read**, translating text you already typed there is
+  impossible — the app has nothing to send to the translator. Nothing in user
+  mode changes that.
+- **If the game runs as administrator and this app does not**, Windows blocks
+  the keystrokes outright. The app now says so instead of failing silently.
+
+### Roblox
+
+Worth setting expectations honestly, because Roblox is the most common request
+and it is the worst case:
+
+- **Roblox already translates chat automatically**, in both directions,
+  including Thai. For chat, you very likely do not need this app at all.
+- **Roblox counts message length in bytes, not characters.** Thai is three
+  bytes per character in UTF-8, so a Thai message is rejected at roughly a
+  third of its visible length. That is Roblox's own limit and applies whether
+  you type or paste.
+- **Incoming chat cannot be selected or copied**, so translating what somebody
+  else said is not possible from outside the game.
+
+This app never injects code into another process, never reads or writes another
+process's memory, and uses no driver — it only asks Windows to deliver
+keystrokes, the same call every accessibility tool and text expander uses. That
+is a deliberate design limit and not a claim about any particular game's rules:
+if a game you play forbids external input tools, this app is an external input
+tool, and that is your call to make.
 
 ---
 
@@ -373,6 +469,21 @@ Issues and pull requests are welcome.
 **Adding a translation engine:** add an entry to `TRANSLATION_ENGINES` and a
 translate function in [`translator_core.py`](translator_core.py). The rest of
 the app discovers it automatically.
+
+---
+
+## Security and privacy
+
+- **[Security and signing](docs/SECURITY.md)** — why Windows warns you, how to
+  verify a download without trusting me, and what it would take to sign these
+  builds.
+- **[Privacy](docs/PRIVACY.md)** — exactly which service receives the text you
+  translate, what is stored on your machine, and the one request the app makes
+  that you did not ask for.
+
+Short version: no telemetry, no analytics, API keys never leave your computer
+except to the service they belong to, and translation history is held in memory
+and discarded when you close the app.
 
 ---
 

@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
+PackageIdentifier: Mrgunshi.TypistTranslator
+PackageVersion: 3.2.0
+PackageLocale: en-US
+Publisher: Mrgunshi
+PublisherUrl: https://github.com/luraselenehalo
+PublisherSupportUrl: https://github.com/luraselenehalo/typist-translator/issues
+Author: Mrgunshi
+PackageName: Typist Translator
+PackageUrl: https://github.com/luraselenehalo/typist-translator
+License: MIT
+LicenseUrl: https://github.com/luraselenehalo/typist-translator/blob/main/LICENSE
+Copyright: Copyright (c) 2026 Mrgunshi
+ShortDescription: Translate text in place in any Windows application with one hotkey.
+Description: |-
+  Type in one language, press a hotkey, and the text you typed is replaced by
+  its translation - in Discord, LINE, Messenger, Word, a browser, anywhere you
+  can type. Over 100 languages across five translation engines, two of which
+  need no account or API key. The interface is available in English, Thai,
+  Japanese and Simplified Chinese.
+Moniker: typist-translator
+Tags:
+  - translate
+  - translation
+  - hotkey
+  - productivity
+  - thai
+ReleaseNotesUrl: https://github.com/luraselenehalo/typist-translator/releases/tag/v3.2.0
+ManifestType: defaultLocale
+ManifestVersion: 1.6.0

@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+PackageIdentifier: Mrgunshi.TypistTranslator
+PackageVersion: 3.2.0
+InstallerType: inno
+Scope: user
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+ProductCode: '{D5A42794-BC5C-4F17-B905-BAE69A6255EB}_is1'
+ReleaseDate: 2026-09-07
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/luraselenehalo/typist-translator/releases/download/v3.2.0/TypistTranslator-Setup-3.2.0.exe
+    InstallerSha256: 97EAC20010C068705DDC75DBFCD917D023079656DE1F70B49180D187D17B9802
+ManifestType: installer
+ManifestVersion: 1.6.0

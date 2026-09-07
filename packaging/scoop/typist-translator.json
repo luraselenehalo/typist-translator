@@ -1,0 +1,30 @@
+{
+    "version": "3.2.0",
+    "description": "Translate text in place in any Windows application with one hotkey.",
+    "homepage": "https://github.com/luraselenehalo/typist-translator",
+    "license": "MIT",
+    "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v3.2.0/TypistTranslator-3.2.0-portable.zip",
+    "hash": "261e3dea4318f5c4098378d4ab148a4dbe1358b202d955633af9001dc8dd32cc",
+    "extract_dir": "TypistTranslator-3.2.0",
+    "shortcuts": [
+        [
+            "TypistTranslator.exe",
+            "Typist Translator"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/luraselenehalo/typist-translator"
+    },
+    "autoupdate": {
+        "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v$version/TypistTranslator-$version-portable.zip",
+        "extract_dir": "TypistTranslator-$version",
+        "hash": {
+            "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v$version/SHA256SUMS.txt"
+        }
+    },
+    "notes": [
+        "Settings and API keys are kept in %APPDATA%\\TypistTranslator and",
+        "survive an update or an uninstall.",
+        "This portable build cannot update itself - Scoop updates it."
+    ]
+}

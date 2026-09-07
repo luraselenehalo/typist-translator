@@ -17,6 +17,7 @@ staging copy costs a couple of seconds against a class of failure that is
 miserable to diagnose.
 """
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
@@ -194,6 +195,39 @@ def make_portable(payload):
     return archive
 
 
+def write_checksums(artifacts):
+    """SHA256SUMS.txt beside the artifacts, plus their VirusTotal links.
+
+    This is the only integrity evidence an unsigned build can offer. Windows
+    itself will not read it - SmartScreen wants an Authenticode signature and
+    nothing else - but it is what lets a cautious person confirm that the file
+    they downloaded is the file that was published, and it is the text that
+    goes into the release notes.
+
+    The VirusTotal address is just the digest, so no API call and no account is
+    needed: uploading the file once makes the link live for everyone.
+    """
+    lines = []
+    for path in artifacts:
+        digest = hashlib.sha256()
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        lines.append((os.path.basename(path), digest.hexdigest()))
+
+    target = os.path.join(RELEASE_DIR, "SHA256SUMS.txt")
+    with open(target, "w", encoding="utf-8", newline="\n") as handle:
+        for name, digest in lines:
+            handle.write(f"{digest}  {name}\n")
+
+    say(f"checksums: {target}")
+    for name, digest in lines:
+        say(f"  {name}")
+        say(f"    sha256     {digest}")
+        say(f"    virustotal https://www.virustotal.com/gui/file/{digest}")
+    return target
+
+
 def compile_installer(payload, stage):
     if not os.path.exists(ISCC):
         raise SystemExit(
@@ -203,12 +237,24 @@ def compile_installer(payload, stage):
     shutil.copy2(os.path.join(PROJECT, "packaging", "installer.iss"), script)
     shutil.copy2(os.path.join(PROJECT, "icon.ico"), os.path.join(stage, "icon.ico"))
     os.makedirs(RELEASE_DIR, exist_ok=True)
-    run([ISCC,
-         f"/DAppVersion={about.VERSION}",
-         f"/DSourceDir={payload}",
-         f"/DOutputDir={RELEASE_DIR}",
-         f"/DAssetsDir={stage}",
-         script])
+    command = [ISCC,
+               f"/DAppVersion={about.VERSION}",
+               f"/DSourceDir={payload}",
+               f"/DOutputDir={RELEASE_DIR}",
+               f"/DAssetsDir={stage}"]
+    # TYPIST_SIGN_TOOL is the full signtool command line, with $f where Inno
+    # should substitute the file name, e.g.
+    #   set TYPIST_SIGN_TOOL=signtool sign /fd sha256 /tr http://... /td sha256 $f
+    # Absent - which is the normal case today - the build is simply unsigned
+    # and says so, rather than half-signing something.
+    sign_tool = os.environ.get("TYPIST_SIGN_TOOL", "").strip()
+    if sign_tool:
+        say("signing the installer")
+        command += ["/DSign", f"/SSign={sign_tool}"]
+    else:
+        say("no TYPIST_SIGN_TOOL set - the installer will be unsigned")
+    command.append(script)
+    run(command)
     return os.path.join(
         RELEASE_DIR, f"TypistTranslator-Setup-{about.VERSION}.exe")
 
@@ -250,11 +296,15 @@ def main():
         setup = compile_installer(payload, stage)
         say(f"installer: {setup}  "
             f"({os.path.getsize(setup) / 1048576:.1f} MB)")
+        artifacts = [setup]
 
         if not args.no_zip:
             archive = make_portable(payload)
             say(f"portable:  {archive}  "
                 f"({os.path.getsize(archive) / 1048576:.1f} MB)")
+            artifacts.append(archive)
+
+        write_checksums(artifacts)
     finally:
         if args.keep:
             say(f"staging kept at {stage}")

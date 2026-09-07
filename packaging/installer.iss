@@ -67,6 +67,18 @@ UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/max
 SolidCompression=yes
+; Signing. Inert until a certificate exists: build.py passes /DSign only when
+; one is configured, and ISCC then needs a matching "Sign" tool defined in
+; its settings (or passed with /S).
+;
+; It has to be the OUTER setup executable that gets signed. SmartScreen judges
+; the file the user actually launches - the one carrying the Mark-of-the-Web -
+; so signing only TypistTranslator.exe inside would leave the warning exactly
+; as it is today.
+#ifdef Sign
+SignTool=Sign
+SignedUninstaller=yes
+#endif
 WizardStyle=modern
 ShowLanguageDialog=yes
 CloseApplications=no
