@@ -1,11 +1,11 @@
 {
-    "version": "3.2.0",
+    "version": "3.2.1",
     "description": "Translate text in place in any Windows application with one hotkey.",
     "homepage": "https://github.com/luraselenehalo/typist-translator",
     "license": "MIT",
-    "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v3.2.0/TypistTranslator-3.2.0-portable.zip",
-    "hash": "261e3dea4318f5c4098378d4ab148a4dbe1358b202d955633af9001dc8dd32cc",
-    "extract_dir": "TypistTranslator-3.2.0",
+    "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v3.2.1/TypistTranslator-3.2.1-portable.zip",
+    "hash": "d519306b4527ccbf4d4ab2fbb2faa0a600ba80eda3150d6f05fd63897c184975",
+    "extract_dir": "TypistTranslator-3.2.1",
     "shortcuts": [
         [
             "TypistTranslator.exe",
@@ -17,10 +17,7 @@
     },
     "autoupdate": {
         "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v$version/TypistTranslator-$version-portable.zip",
-        "extract_dir": "TypistTranslator-$version",
-        "hash": {
-            "url": "https://github.com/luraselenehalo/typist-translator/releases/download/v$version/SHA256SUMS.txt"
-        }
+        "extract_dir": "TypistTranslator-$version"
     },
     "notes": [
         "Settings and API keys are kept in %APPDATA%\\TypistTranslator and",

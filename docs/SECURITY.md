@@ -46,7 +46,8 @@ separate fix, and advice for one does not apply to the other.
 
 ### The checksum
 
-Every release ships `SHA256SUMS.txt`. Compare it against your download:
+Every release lists the SHA-256 of both files in its notes. Compare against
+your download:
 
 ```powershell
 Get-FileHash .\TypistTranslator-Setup-<version>.exe
@@ -89,7 +90,7 @@ The only address these builds are published from is
 **https://github.com/luraselenehalo/typist-translator**.
 
 A copy of this application offered from anywhere else was not published by me,
-and its checksum will not match `SHA256SUMS.txt`.
+and its checksum will not match the one published in that release's notes.
 
 ---
 

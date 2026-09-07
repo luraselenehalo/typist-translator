@@ -40,6 +40,21 @@
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 4px;
+  /* A flex item normally cannot be shrunk below its content, because
+     min-height resolves to auto. Setting overflow to anything but visible
+     turns that off - so inside the picker, which is a column flex container
+     with a max-height, this row was being crushed from 27px to 2px and all
+     that remained on screen was its own scrollbar. */
+  flex: 0 0 auto;
+  min-height: min-content;
+  /* A 10px scrollbar under a 27px row of chips is heavier than the chips. */
+  scrollbar-width: thin;
+}
+.chips::-webkit-scrollbar {
+  height: 6px;
+}
+.chips::-webkit-scrollbar-thumb {
+  border-width: 2px;
 }
 .chip {
   border: 1px solid transparent;

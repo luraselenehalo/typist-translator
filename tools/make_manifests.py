@@ -170,8 +170,10 @@ def scoop(sums):
             "url": (f"{about.github_url()}/releases/download/v$version/"
                     f"TypistTranslator-$version-portable.zip"),
             "extract_dir": "TypistTranslator-$version",
-            "hash": {"url": f"{about.github_url()}/releases/download/"
-                            f"v$version/SHA256SUMS.txt"},
+            # No "hash" block on purpose. Pointing it at a checksums file means
+            # the release has to carry one forever; without it Scoop downloads
+            # the asset and computes the hash itself, which is one less thing
+            # that can fall out of step with the release.
         },
         "notes": [
             "Settings and API keys are kept in %APPDATA%\\TypistTranslator and",

@@ -202,7 +202,7 @@ class UpdatePanel:
         return self._window
 
     def mark_ready(self):
-        self._hwnd = win.find_window(TITLE, timeout=win.HWND_WAIT_SECONDS)
+        self._hwnd = win.wait_for_window(self._window, TITLE)
         if not self._hwnd:
             print("[Update] Notification window not found; updates will be silent.")
             return
@@ -228,6 +228,21 @@ class UpdatePanel:
         return self._ready
 
     # -- showing ------------------------------------------------------
+    def _ensure_ready(self):
+        """Try once more to claim the window, if start-up did not manage it.
+
+        mark_ready() runs while pywebview is still bringing windows up, and
+        losing that race used to disable this overlay for the whole session.
+        Retrying on first use means a miss costs one delayed appearance rather
+        than every appearance.
+        """
+        if self._ready:
+            return True
+        if self._window is None:
+            return False
+        self.mark_ready()
+        return self._ready
+
     def offer(self, version, notes, theme="light"):
         """Tell the user a new version exists, and ask what to do."""
         self._show({
@@ -292,7 +307,7 @@ class UpdatePanel:
 
     # -- internals ----------------------------------------------------
     def _show(self, payload):
-        if not self._ready:
+        if not self._ensure_ready():
             return
         with self._lock:
             try:

@@ -188,8 +188,7 @@ class ToastHUD:
         return self._window
 
     def mark_ready(self):
-        self._hwnd = win.find_window("Typist Toast",
-                                     timeout=win.HWND_WAIT_SECONDS)
+        self._hwnd = win.wait_for_window(self._window, "Typist Toast")
         if not self._hwnd:
             print("[ToastHUD] Window handle not found; toast disabled.")
             return
@@ -209,9 +208,24 @@ class ToastHUD:
             except Exception:
                 pass
 
+    def _ensure_ready(self):
+        """Try once more to claim the window, if start-up did not manage it.
+
+        mark_ready() runs while pywebview is still bringing windows up, and
+        losing that race used to disable this overlay for the whole session.
+        Retrying on first use means a miss costs one delayed appearance rather
+        than every appearance.
+        """
+        if self._ready:
+            return True
+        if self._window is None:
+            return False
+        self.mark_ready()
+        return self._ready
+
     def show(self, original, translated, source_lang, target_lang,
              theme="light", duration_ms=2600):
-        if self._window is None or not self._ready:
+        if not self._ensure_ready():
             return
         src = LANGUAGES_DB.get(source_lang, {}).get("flag", "🌐")
         tgt = LANGUAGES_DB.get(target_lang, {}).get("flag", "🌐")

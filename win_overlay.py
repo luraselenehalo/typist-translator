@@ -128,14 +128,7 @@ HWND_WAIT_SECONDS = 6.0
 
 
 def find_window(title, timeout=0.0, poll=0.02):
-    """The handle for a window title, optionally waiting for it to appear.
-
-    pywebview runs its ``start`` callback on its own thread as soon as the GUI
-    loop is up, which is not the same moment as the secondary windows being
-    realised - so a single FindWindowW is a race. Losing it used to leave the
-    chip, the toast and the update card permanently disabled for the whole
-    session, and the only sign was one line on a console the app does not have.
-    """
+    """The handle for a window title, optionally waiting for it to appear."""
     deadline = time.perf_counter() + timeout
     while True:
         hwnd = user32.FindWindowW(None, title)
@@ -144,6 +137,31 @@ def find_window(title, timeout=0.0, poll=0.02):
         if time.perf_counter() >= deadline:
             return None
         time.sleep(poll)
+
+
+def wait_for_window(window, title, timeout=HWND_WAIT_SECONDS):
+    """Block until pywebview has actually shown ``window``, then find its HWND.
+
+    pywebview runs its ``start`` callback as soon as the GUI loop is up, which
+    is not the same moment as the secondary windows being realised - so looking
+    the window up by title straight away is a race.
+
+    It was first written as a timed poll, and that is not good enough: on a
+    loaded machine the poll ran out and the chip, the toast and the update card
+    were left disabled for the entire session, with the only sign being one
+    line printed to a console a windowed app does not have. Waiting on
+    pywebview's own ``shown`` event waits for the actual thing instead of
+    guessing how long it takes.
+    """
+    try:
+        window.events.shown.wait(timeout)
+    except Exception:
+        # Older pywebview, or a window that never gets the event. Fall back to
+        # the poll rather than giving up.
+        return find_window(title, timeout=timeout)
+    # The event fires as the window is shown; the handle is there by now, but
+    # allow a beat for it to be registered under its title.
+    return find_window(title, timeout=2.0)
 
 
 def apply_overlay_styles(hwnd, click_through=False):

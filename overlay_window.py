@@ -260,7 +260,7 @@ class ProgressOverlay:
     def mark_ready(self):
         """Style the window and park it. Call once webview.start() is running."""
         try:
-            self._hwnd = win.find_window(TITLE, timeout=win.HWND_WAIT_SECONDS)
+            self._hwnd = win.wait_for_window(self._window, TITLE)
             if not self._hwnd:
                 print("[Overlay] Window handle not found; overlay disabled.")
                 return
@@ -296,9 +296,24 @@ class ProgressOverlay:
         return self._ready
 
     # -- the three things the hotkey workflow reports -----------------
+    def _ensure_ready(self):
+        """Try once more to claim the window, if start-up did not manage it.
+
+        mark_ready() runs while pywebview is still bringing windows up, and
+        losing that race used to disable this overlay for the whole session.
+        Retrying on first use means a miss costs one delayed appearance rather
+        than every appearance.
+        """
+        if self._ready:
+            return True
+        if self._window is None:
+            return False
+        self.mark_ready()
+        return self._ready
+
     def show_working(self, label, preview="", tag="", theme="light"):
         """Place the chip next to the text and start the working animation."""
-        if not self._ready:
+        if not self._ensure_ready():
             return
         with self._lock:
             self._generation += 1

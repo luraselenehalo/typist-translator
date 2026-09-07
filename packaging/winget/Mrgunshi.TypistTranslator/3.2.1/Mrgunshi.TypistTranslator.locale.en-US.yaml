@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
 PackageIdentifier: Mrgunshi.TypistTranslator
-PackageVersion: 3.2.0
+PackageVersion: 3.2.1
 PackageLocale: en-US
 Publisher: Mrgunshi
 PublisherUrl: https://github.com/luraselenehalo
@@ -25,6 +25,6 @@ Tags:
   - hotkey
   - productivity
   - thai
-ReleaseNotesUrl: https://github.com/luraselenehalo/typist-translator/releases/tag/v3.2.0
+ReleaseNotesUrl: https://github.com/luraselenehalo/typist-translator/releases/tag/v3.2.1
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0

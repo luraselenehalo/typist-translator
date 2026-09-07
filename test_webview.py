@@ -360,6 +360,30 @@ def run(js, api, history, window, config):
     check("picker opened", js("!!document.querySelector('.modal')") is True)
     rows = js("document.querySelectorAll('.lang-row').length")
     check("picker listed languages", (rows or 0) > 5, f"{rows} rows")
+
+    # The popular-language chips are a flex item with overflow-x, inside a
+    # column flex container with a max-height. That combination switches off
+    # the item's automatic minimum size, and flex-shrink crushed the row from
+    # 27px to 2px - leaving a bar on screen that was almost entirely its own
+    # scrollbar, with the chips squashed invisibly inside it.
+    chips = js("""
+      (() => {
+        const el = document.querySelector('.chips');
+        if (!el) return JSON.stringify({missing: true});
+        const kid = el.firstElementChild;
+        return JSON.stringify({
+          count: el.children.length,
+          clientHeight: el.clientHeight,
+          chipHeight: kid ? Math.round(kid.getBoundingClientRect().height) : 0,
+        });
+      })()
+    """, "{}")
+    chips = json.loads(chips or "{}")
+    check("popular languages are rendered as chips",
+          (chips.get("count") or 0) > 0, str(chips))
+    check("the chip row is not crushed by its own scrollbar",
+          (chips.get("chipHeight") or 0) >= 24, f"chips are {chips} - a flex "
+          "item with overflow-x needs flex-shrink:0 or it collapses")
     js("""
       const input = document.querySelector('.modal .input');
       const setter = Object.getOwnPropertyDescriptor(

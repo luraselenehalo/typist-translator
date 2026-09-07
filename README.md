@@ -158,7 +158,8 @@ that currently stands.
 
 What you can check instead, before running anything:
 
-- **Compare the checksum.** Every release ships `SHA256SUMS.txt`. In PowerShell:
+- **Compare the checksum.** Every release lists the SHA-256 of both files in
+  its notes. In PowerShell:
   `Get-FileHash .\TypistTranslator-Setup-<version>.exe`
 - **Read the scan.** Each release links a VirusTotal report for both files.
 - **Build it yourself.** `python build.py` produces exactly the published
